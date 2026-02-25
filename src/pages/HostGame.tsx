@@ -246,10 +246,9 @@ export default function HostGame() {
         <div className="text-2xl md:text-3xl font-black text-indigo-600">PIN: {pin}</div>
         <button
           onClick={handleNext}
-          disabled={!showResult}
-          className="bg-indigo-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+          className="bg-indigo-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2"
         >
-          Next <ArrowRight size={20} />
+          {showResult ? "Next" : "Skip"} <ArrowRight size={20} />
         </button>
       </header>
 

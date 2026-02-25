@@ -92,7 +92,8 @@ async function startServer() {
       if (game) {
         game.hostSocketId = socket.id;
         socket.join(data.pin);
-        callback({ success: true, game });
+        const { timer, ...safeGame } = game;
+        callback({ success: true, game: safeGame });
       } else {
         callback({ error: "Game not found" });
       }
@@ -105,7 +106,8 @@ async function startServer() {
         if (player) {
           player.id = socket.id;
           socket.join(data.pin);
-          callback({ success: true, game, player });
+          const { timer, ...safeGame } = game;
+          callback({ success: true, game: safeGame, player });
         } else {
           callback({ error: "Player not found" });
         }
@@ -190,7 +192,6 @@ async function startServer() {
       const game = games.get(data.pin);
       if (game && game.hostSocketId === socket.id) {
         if (game.status === "question") {
-          // Should not happen normally as endQuestion handles it, but just in case
           if (game.timer) clearTimeout(game.timer);
           endQuestion(game, io);
         } else if (game.status === "leaderboard") {
