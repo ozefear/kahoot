@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Plus, Trash2, Image as ImageIcon, Save, Menu, X } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
 import { SHAPES } from "../components/Shapes";
 
@@ -27,6 +27,11 @@ export default function HostCreate() {
   ]);
   const [activeQuestionId, setActiveQuestionId] = useState(questions[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [showLoadModal, setShowLoadModal] = useState(false);
+  const [hostNickname, setHostNickname] = useState("");
+  const [setTitle, setSetTitle] = useState("");
+  const [savedSets, setSavedSets] = useState<any[]>([]);
 
   const activeQuestionIndex = questions.findIndex((q) => q.id === activeQuestionId);
   const activeQuestion = questions[activeQuestionIndex];
@@ -76,6 +81,33 @@ export default function HostCreate() {
     });
   };
 
+  const handleSaveSet = () => {
+    if (!hostNickname || !setTitle) return alert("Please enter nickname and title");
+    socket.emit("save_set", { hostNickname, title: setTitle, questions }, (res: any) => {
+      if (res.success) {
+        alert("Saved successfully!");
+        setShowSaveModal(false);
+      } else {
+        alert("Failed to save");
+      }
+    });
+  };
+
+  const handleLoadSets = () => {
+    if (!hostNickname) return alert("Please enter nickname");
+    socket.emit("load_sets", { hostNickname }, (res: any) => {
+      if (res.success) {
+        setSavedSets(res.sets);
+      }
+    });
+  };
+
+  const loadSpecificSet = (questionsJson: any) => {
+    setQuestions(questionsJson);
+    setActiveQuestionId(questionsJson[0].id);
+    setShowLoadModal(false);
+  };
+
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
       <header className="bg-white shadow-sm p-4 flex justify-between items-center z-20 relative">
@@ -88,13 +120,29 @@ export default function HostCreate() {
           </button>
           <h1 className="text-xl md:text-2xl font-black text-indigo-600">Create Game</h1>
         </div>
-        <button
-          onClick={handleCreateLobby}
-          className="bg-indigo-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 text-sm md:text-base"
-        >
-          <Save size={20} />
-          <span className="hidden sm:inline">Create Lobby</span>
-        </button>
+        <div className="flex items-center gap-2 md:gap-4">
+          <button
+            onClick={() => setShowLoadModal(true)}
+            className="bg-gray-100 text-gray-700 px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-gray-200 flex items-center gap-2 text-sm md:text-base"
+          >
+            <FolderOpen size={20} />
+            <span className="hidden sm:inline">Load</span>
+          </button>
+          <button
+            onClick={() => setShowSaveModal(true)}
+            className="bg-gray-100 text-gray-700 px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-gray-200 flex items-center gap-2 text-sm md:text-base"
+          >
+            <Save size={20} />
+            <span className="hidden sm:inline">Save</span>
+          </button>
+          <button
+            onClick={handleCreateLobby}
+            className="bg-indigo-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 text-sm md:text-base"
+          >
+            <Play size={20} />
+            <span className="hidden sm:inline">Create Lobby</span>
+          </button>
+        </div>
       </header>
 
       <div className="flex-1 flex overflow-hidden relative">
@@ -261,6 +309,62 @@ export default function HostCreate() {
           </div>
         </div>
       </div>
+
+      {showSaveModal && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl">
+            <h2 className="text-2xl font-bold mb-4">Save Question Set</h2>
+            <input
+              type="text"
+              placeholder="Your Host Nickname"
+              value={hostNickname}
+              onChange={e => setHostNickname(e.target.value)}
+              className="w-full p-3 border rounded-xl mb-4 outline-none focus:border-indigo-500"
+            />
+            <input
+              type="text"
+              placeholder="Set Title (e.g. History Quiz)"
+              value={setTitle}
+              onChange={e => setSetTitle(e.target.value)}
+              className="w-full p-3 border rounded-xl mb-6 outline-none focus:border-indigo-500"
+            />
+            <div className="flex justify-end gap-2">
+              <button onClick={() => setShowSaveModal(false)} className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Cancel</button>
+              <button onClick={handleSaveSet} className="px-4 py-2 font-bold bg-indigo-600 text-white rounded-lg hover:bg-indigo-700">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showLoadModal && (
+        <div className="absolute inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+          <div className="bg-white rounded-2xl p-6 w-full max-w-md shadow-2xl max-h-[80vh] flex flex-col">
+            <h2 className="text-2xl font-bold mb-4">Load Question Set</h2>
+            <div className="flex gap-2 mb-4">
+              <input
+                type="text"
+                placeholder="Your Host Nickname"
+                value={hostNickname}
+                onChange={e => setHostNickname(e.target.value)}
+                className="flex-1 p-3 border rounded-xl outline-none focus:border-indigo-500"
+              />
+              <button onClick={handleLoadSets} className="px-4 py-2 font-bold bg-indigo-600 text-white rounded-xl hover:bg-indigo-700">Find</button>
+            </div>
+            <div className="flex-1 overflow-y-auto space-y-2">
+              {savedSets.map(set => (
+                <div key={set.id} className="p-4 border rounded-xl flex justify-between items-center hover:bg-gray-50">
+                  <span className="font-bold">{set.title}</span>
+                  <button onClick={() => loadSpecificSet(set.questions)} className="text-indigo-600 font-bold hover:underline">Load</button>
+                </div>
+              ))}
+              {savedSets.length === 0 && <p className="text-gray-400 text-center py-4">No sets found.</p>}
+            </div>
+            <div className="flex justify-end mt-4">
+              <button onClick={() => setShowLoadModal(false)} className="px-4 py-2 font-bold text-gray-500 hover:bg-gray-100 rounded-lg">Close</button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

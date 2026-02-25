@@ -93,21 +93,21 @@ export default function HostGame() {
         <h1 className="text-4xl md:text-6xl font-black mb-12">Podium</h1>
         <div className="flex items-end gap-4 md:gap-8 h-64 md:h-96">
           {finalLeaderboard[1] && (
-            <motion.div initial={{ y: 200 }} animate={{ y: 0 }} transition={{ delay: 0.5 }} className="flex flex-col items-center">
+            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, type: "spring" }} className="flex flex-col items-center">
               <div className="text-xl md:text-2xl font-bold mb-4 truncate w-24 md:w-32 text-center">{finalLeaderboard[1].name}</div>
               <div className="w-24 md:w-32 h-32 md:h-48 bg-gray-300 rounded-t-xl flex items-center justify-center text-4xl font-black text-gray-800">2</div>
               <div className="mt-4 font-bold text-lg md:text-xl">{finalLeaderboard[1].score}</div>
             </motion.div>
           )}
           {finalLeaderboard[0] && (
-            <motion.div initial={{ y: 300 }} animate={{ y: 0 }} transition={{ delay: 1 }} className="flex flex-col items-center">
+            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, type: "spring" }} className="flex flex-col items-center">
               <div className="text-2xl md:text-3xl font-bold mb-4 truncate w-32 md:w-40 text-center">{finalLeaderboard[0].name}</div>
               <div className="w-32 md:w-40 h-48 md:h-64 bg-yellow-400 rounded-t-xl flex items-center justify-center text-6xl font-black text-yellow-800">1</div>
               <div className="mt-4 font-bold text-xl md:text-2xl">{finalLeaderboard[0].score}</div>
             </motion.div>
           )}
           {finalLeaderboard[2] && (
-            <motion.div initial={{ y: 150 }} animate={{ y: 0 }} className="flex flex-col items-center">
+            <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring" }} className="flex flex-col items-center">
               <div className="text-lg md:text-xl font-bold mb-4 truncate w-20 md:w-28 text-center">{finalLeaderboard[2].name}</div>
               <div className="w-20 md:w-28 h-24 md:h-32 bg-orange-400 rounded-t-xl flex items-center justify-center text-3xl font-black text-orange-900">3</div>
               <div className="mt-4 font-bold text-base md:text-lg">{finalLeaderboard[2].score}</div>

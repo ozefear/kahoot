@@ -3,6 +3,17 @@ import { createServer as createViteServer } from "vite";
 import { Server } from "socket.io";
 import { createServer } from "http";
 import { v4 as uuidv4 } from "uuid";
+import Database from "better-sqlite3";
+
+const db = new Database("kahoot.db");
+db.exec(`
+  CREATE TABLE IF NOT EXISTS question_sets (
+    id TEXT PRIMARY KEY,
+    host_nickname TEXT,
+    title TEXT,
+    questions TEXT
+  )
+`);
 
 // Types
 type Question = {
@@ -53,6 +64,28 @@ async function startServer() {
   // Socket.io logic
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
+
+    socket.on("save_set", (data: { hostNickname: string; title: string; questions: Question[] }, callback) => {
+      try {
+        const id = uuidv4();
+        const stmt = db.prepare('INSERT INTO question_sets (id, host_nickname, title, questions) VALUES (?, ?, ?, ?)');
+        stmt.run(id, data.hostNickname, data.title, JSON.stringify(data.questions));
+        callback({ success: true, id });
+      } catch (e) {
+        callback({ error: "Failed to save" });
+      }
+    });
+
+    socket.on("load_sets", (data: { hostNickname: string }, callback) => {
+      try {
+        const stmt = db.prepare('SELECT id, title, questions FROM question_sets WHERE host_nickname = ?');
+        const rows = stmt.all(data.hostNickname) as any[];
+        const sets = rows.map(r => ({ ...r, questions: JSON.parse(r.questions) }));
+        callback({ success: true, sets });
+      } catch (e) {
+        callback({ error: "Failed to load" });
+      }
+    });
 
     // Host creates a game
     socket.on("host_create_game", (data: { questions: Question[] }, callback) => {

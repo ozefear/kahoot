@@ -83,13 +83,15 @@ export default function HostLobby() {
         </div>
 
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-8">
-          <AnimatePresence>
+          <AnimatePresence mode="popLayout">
             {players.map((player) => (
               <motion.div
+                layout
                 key={player.id}
-                initial={{ scale: 0, opacity: 0 }}
+                initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
-                exit={{ scale: 0, opacity: 0 }}
+                exit={{ scale: 0.8, opacity: 0 }}
+                transition={{ type: "spring", bounce: 0.3 }}
                 className="bg-indigo-50 text-indigo-900 font-bold text-lg md:text-xl py-3 px-4 md:px-6 rounded-xl truncate shadow-sm border border-indigo-100"
               >
                 {player.name}
