@@ -1,9 +1,10 @@
-import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
 import { socket } from "../socket";
 
 export default function Home() {
-  const [pin, setPin] = useState("");
+  const [searchParams] = useSearchParams();
+  const [pin, setPin] = useState(searchParams.get("pin") || "");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
@@ -23,8 +24,8 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-indigo-600 flex flex-col items-center justify-center p-4">
-      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-8">
-        <h1 className="text-4xl font-black text-center text-indigo-600 mb-8 tracking-tighter">
+      <div className="w-full max-w-md bg-white rounded-2xl shadow-xl p-6 md:p-8">
+        <h1 className="text-3xl md:text-4xl font-black text-center text-indigo-600 mb-8 tracking-tighter">
           Kahoot Clone
         </h1>
         
@@ -35,7 +36,7 @@ export default function Home() {
               placeholder="Game PIN"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              className="w-full text-center text-2xl font-bold p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 outline-none"
+              className="w-full text-center text-xl md:text-2xl font-bold p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 outline-none"
               maxLength={6}
             />
           </div>
@@ -45,7 +46,7 @@ export default function Home() {
               placeholder="Nickname"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full text-center text-xl font-bold p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 outline-none"
+              className="w-full text-center text-xl md:text-2xl font-bold p-4 border-2 border-gray-200 rounded-xl focus:border-indigo-500 focus:ring-0 outline-none"
               maxLength={15}
             />
           </div>

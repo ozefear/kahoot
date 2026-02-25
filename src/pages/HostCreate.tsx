@@ -1,8 +1,9 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Plus, Trash2, Image as ImageIcon, Save } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Save, Menu, X } from "lucide-react";
 import { v4 as uuidv4 } from "uuid";
+import { SHAPES } from "../components/Shapes";
 
 type Question = {
   id: string;
@@ -25,6 +26,7 @@ export default function HostCreate() {
     },
   ]);
   const [activeQuestionId, setActiveQuestionId] = useState(questions[0].id);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   const activeQuestionIndex = questions.findIndex((q) => q.id === activeQuestionId);
   const activeQuestion = questions[activeQuestionIndex];
@@ -45,6 +47,7 @@ export default function HostCreate() {
     };
     setQuestions([...questions, newQuestion]);
     setActiveQuestionId(newQuestion.id);
+    setSidebarOpen(false);
   };
 
   const handleDeleteQuestion = (id: string) => {
@@ -75,24 +78,39 @@ export default function HostCreate() {
 
   return (
     <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-        <h1 className="text-2xl font-black text-indigo-600">Create Game</h1>
+      <header className="bg-white shadow-sm p-4 flex justify-between items-center z-20 relative">
+        <div className="flex items-center gap-4">
+          <button 
+            onClick={() => setSidebarOpen(!sidebarOpen)}
+            className="md:hidden p-2 text-gray-600 hover:bg-gray-100 rounded-lg"
+          >
+            {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
+          </button>
+          <h1 className="text-xl md:text-2xl font-black text-indigo-600">Create Game</h1>
+        </div>
         <button
           onClick={handleCreateLobby}
-          className="bg-indigo-600 text-white px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2"
+          className="bg-indigo-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2 text-sm md:text-base"
         >
           <Save size={20} />
-          Create Lobby
+          <span className="hidden sm:inline">Create Lobby</span>
         </button>
       </header>
 
-      <div className="flex-1 flex overflow-hidden">
+      <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar */}
-        <div className="w-64 bg-white border-r border-gray-200 overflow-y-auto p-4 flex flex-col gap-4">
+        <div className={`
+          absolute md:relative z-10 w-64 h-full bg-white border-r border-gray-200 overflow-y-auto p-4 flex flex-col gap-4
+          transition-transform duration-300 ease-in-out
+          ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
+        `}>
           {questions.map((q, index) => (
             <div
               key={q.id}
-              onClick={() => setActiveQuestionId(q.id)}
+              onClick={() => {
+                setActiveQuestionId(q.id);
+                setSidebarOpen(false);
+              }}
               className={`p-4 rounded-xl border-2 cursor-pointer relative group ${
                 activeQuestionId === q.id
                   ? "border-indigo-600 bg-indigo-50"
@@ -124,19 +142,27 @@ export default function HostCreate() {
           </button>
         </div>
 
+        {/* Overlay for mobile sidebar */}
+        {sidebarOpen && (
+          <div 
+            className="absolute inset-0 bg-black/20 z-0 md:hidden"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+
         {/* Main Editor */}
-        <div className="flex-1 overflow-y-auto p-8">
-          <div className="max-w-4xl mx-auto space-y-8">
+        <div className="flex-1 overflow-y-auto p-4 md:p-8">
+          <div className="max-w-4xl mx-auto space-y-6 md:space-y-8">
             <input
               type="text"
               placeholder="Start typing your question"
               value={activeQuestion.title}
               onChange={(e) => updateActiveQuestion({ title: e.target.value })}
-              className="w-full text-center text-4xl font-bold p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent focus:border-indigo-500 outline-none"
+              className="w-full text-center text-2xl md:text-4xl font-bold p-4 md:p-6 bg-white rounded-2xl shadow-sm border-2 border-transparent focus:border-indigo-500 outline-none"
             />
 
-            <div className="flex justify-center gap-4">
-              <div className="w-96 h-64 bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 p-4 relative overflow-hidden">
+            <div className="flex flex-col md:flex-row justify-center gap-4">
+              <div className="w-full md:w-96 h-48 md:h-64 bg-white rounded-2xl shadow-sm border-2 border-dashed border-gray-300 flex flex-col items-center justify-center text-gray-400 p-4 relative overflow-hidden">
                 {activeQuestion.image ? (
                   <>
                     <img
@@ -157,7 +183,7 @@ export default function HostCreate() {
                     <input
                       type="text"
                       placeholder="Image URL (optional)"
-                      className="w-full text-center p-2 border border-gray-200 rounded-lg outline-none focus:border-indigo-500"
+                      className="w-full text-center p-2 border border-gray-200 rounded-lg outline-none focus:border-indigo-500 text-sm md:text-base"
                       value={activeQuestion.image || ""}
                       onChange={(e) => updateActiveQuestion({ image: e.target.value })}
                     />
@@ -165,7 +191,7 @@ export default function HostCreate() {
                 )}
               </div>
               
-              <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-4 w-full md:w-auto">
                 <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-200">
                   <label className="block text-sm font-bold text-gray-700 mb-2">
                     Time limit
@@ -186,7 +212,7 @@ export default function HostCreate() {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeQuestion.options.map((opt, index) => {
                 const colors = [
                   "bg-red-500",
@@ -194,30 +220,14 @@ export default function HostCreate() {
                   "bg-yellow-500",
                   "bg-green-500",
                 ];
-                const hoverColors = [
-                  "hover:bg-red-600",
-                  "hover:bg-blue-600",
-                  "hover:bg-yellow-600",
-                  "hover:bg-green-600",
-                ];
+                const Shape = SHAPES[index];
                 return (
                   <div
                     key={index}
-                    className={`relative p-6 rounded-2xl shadow-sm flex items-center gap-4 transition-colors ${colors[index]}`}
+                    className={`relative p-4 md:p-6 rounded-2xl shadow-sm flex items-center gap-3 md:gap-4 transition-colors ${colors[index]}`}
                   >
-                    <div
-                      onClick={() =>
-                        updateActiveQuestion({ correctOptionIndex: index })
-                      }
-                      className={`w-8 h-8 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-white/20 ${
-                        activeQuestion.correctOptionIndex === index
-                          ? "border-white"
-                          : "border-white/50 hover:border-white"
-                      }`}
-                    >
-                      {activeQuestion.correctOptionIndex === index && (
-                        <div className="w-3 h-3 bg-white rounded-full" />
-                      )}
+                    <div className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 text-white flex items-center justify-center">
+                      <Shape className="w-full h-full" />
                     </div>
                     <input
                       type="text"
@@ -228,8 +238,22 @@ export default function HostCreate() {
                         newOptions[index] = e.target.value;
                         updateActiveQuestion({ options: newOptions });
                       }}
-                      className="w-full bg-transparent text-white placeholder-white/70 text-xl font-bold outline-none"
+                      className="w-full bg-transparent text-white placeholder-white/70 text-lg md:text-xl font-bold outline-none"
                     />
+                    <div
+                      onClick={() =>
+                        updateActiveQuestion({ correctOptionIndex: index })
+                      }
+                      className={`w-8 h-8 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-white/20 ml-2 ${
+                        activeQuestion.correctOptionIndex === index
+                          ? "border-white"
+                          : "border-white/50 hover:border-white"
+                      }`}
+                    >
+                      {activeQuestion.correctOptionIndex === index && (
+                        <div className="w-3 h-3 bg-white rounded-full" />
+                      )}
+                    </div>
                   </div>
                 );
               })}

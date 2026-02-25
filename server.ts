@@ -20,6 +20,7 @@ type Player = {
   score: number;
   currentAnswerIndex?: number;
   answeredAt?: number; // timestamp
+  streak: number;
 };
 
 type GameState = {
@@ -84,6 +85,7 @@ async function startServer() {
         id: socket.id,
         name: data.name,
         score: 0,
+        streak: 0,
       };
       game.players.push(newPlayer);
       socket.join(data.pin);
@@ -207,6 +209,10 @@ async function startServer() {
     game.status = "leaderboard";
     const currentQuestion = game.questions[game.currentQuestionIndex];
     
+    // Calculate previous ranks
+    const prevLeaderboard = [...game.players].sort((a, b) => b.score - a.score);
+    const prevRanks = new Map(prevLeaderboard.map((p, i) => [p.id, i + 1]));
+
     // Calculate scores
     game.players.forEach((p) => {
       const prevScore = p.score;
@@ -216,6 +222,9 @@ async function startServer() {
         const timeRatio = Math.max(0, 1 - timeTaken / (currentQuestion.timeLimit * 1000));
         const points = Math.round(500 + 500 * timeRatio);
         p.score += points;
+        p.streak = (p.streak || 0) + 1;
+      } else {
+        p.streak = 0;
       }
       
       // Send results to players
@@ -224,8 +233,20 @@ async function startServer() {
         correctOptionIndex: currentQuestion.correctOptionIndex,
         score: p.score,
         pointsEarned: p.score - prevScore,
+        streak: p.streak,
       });
     });
+
+    const newLeaderboard = [...game.players].sort((a, b) => b.score - a.score);
+    const newRanks = new Map(newLeaderboard.map((p, i) => [p.id, i + 1]));
+    
+    const rankChanges = game.players.map(p => {
+      const prev = prevRanks.get(p.id) || 0;
+      const curr = newRanks.get(p.id) || 0;
+      return { name: p.name, change: prev - curr, newRank: curr };
+    }).filter(p => p.change > 0).sort((a, b) => b.change - a.change);
+
+    const highestClimber = rankChanges.length > 0 ? rankChanges[0] : null;
 
     // Send results to host
     const answerCounts = [0, 0, 0, 0];
@@ -239,6 +260,7 @@ async function startServer() {
       correctOptionIndex: currentQuestion.correctOptionIndex,
       answerCounts,
       leaderboard: getLeaderboard(game),
+      highestClimber,
     });
   }
 
