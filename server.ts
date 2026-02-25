@@ -1,0 +1,265 @@
+import express from "express";
+import { createServer as createViteServer } from "vite";
+import { Server } from "socket.io";
+import { createServer } from "http";
+import { v4 as uuidv4 } from "uuid";
+
+// Types
+type Question = {
+  id: string;
+  title: string;
+  image?: string;
+  options: string[];
+  correctOptionIndex: number;
+  timeLimit: number;
+};
+
+type Player = {
+  id: string; // socket id
+  name: string;
+  score: number;
+  currentAnswerIndex?: number;
+  answeredAt?: number; // timestamp
+};
+
+type GameState = {
+  pin: string;
+  hostSocketId: string;
+  status: "lobby" | "question" | "leaderboard" | "finished";
+  questions: Question[];
+  currentQuestionIndex: number;
+  players: Player[];
+  questionStartTime?: number;
+  timer?: NodeJS.Timeout;
+};
+
+const games = new Map<string, GameState>();
+
+async function startServer() {
+  const app = express();
+  const PORT = 3000;
+  const httpServer = createServer(app);
+  const io = new Server(httpServer, {
+    cors: { origin: "*" },
+  });
+
+  // API routes
+  app.use(express.json());
+  app.get("/api/health", (req, res) => {
+    res.json({ status: "ok" });
+  });
+
+  // Socket.io logic
+  io.on("connection", (socket) => {
+    console.log("Client connected:", socket.id);
+
+    // Host creates a game
+    socket.on("host_create_game", (data: { questions: Question[] }, callback) => {
+      const pin = Math.floor(100000 + Math.random() * 900000).toString();
+      const gameState: GameState = {
+        pin,
+        hostSocketId: socket.id,
+        status: "lobby",
+        questions: data.questions,
+        currentQuestionIndex: 0,
+        players: [],
+      };
+      games.set(pin, gameState);
+      socket.join(pin);
+      callback({ pin });
+      console.log(`Game created with PIN: ${pin}`);
+    });
+
+    // Player joins a game
+    socket.on("player_join", (data: { pin: string; name: string }, callback) => {
+      const game = games.get(data.pin);
+      if (!game) {
+        return callback({ error: "Game not found" });
+      }
+      if (game.status !== "lobby") {
+        return callback({ error: "Game already started" });
+      }
+      
+      const newPlayer: Player = {
+        id: socket.id,
+        name: data.name,
+        score: 0,
+      };
+      game.players.push(newPlayer);
+      socket.join(data.pin);
+      
+      // Notify host
+      io.to(game.hostSocketId).emit("player_joined", newPlayer);
+      callback({ success: true, player: newPlayer });
+    });
+
+    // Host starts the game
+    socket.on("host_start_game", (data: { pin: string }) => {
+      const game = games.get(data.pin);
+      if (game && game.hostSocketId === socket.id) {
+        startGameLoop(game, io);
+      }
+    });
+
+    // Player submits an answer
+    socket.on("player_answer", (data: { pin: string; answerIndex: number }) => {
+      const game = games.get(data.pin);
+      if (game && game.status === "question") {
+        const player = game.players.find((p) => p.id === socket.id);
+        if (player && player.currentAnswerIndex === undefined) {
+          player.currentAnswerIndex = data.answerIndex;
+          player.answeredAt = Date.now();
+          
+          // Notify host that a player answered
+          io.to(game.hostSocketId).emit("player_answered", { playerId: player.id });
+
+          // Check if all players answered
+          const allAnswered = game.players.every((p) => p.currentAnswerIndex !== undefined);
+          if (allAnswered && game.timer) {
+            clearTimeout(game.timer);
+            endQuestion(game, io);
+          }
+        }
+      }
+    });
+
+    // Host requests next step (leaderboard or next question)
+    socket.on("host_next_step", (data: { pin: string }) => {
+      const game = games.get(data.pin);
+      if (game && game.hostSocketId === socket.id) {
+        if (game.status === "question") {
+          // Should not happen normally as endQuestion handles it, but just in case
+          if (game.timer) clearTimeout(game.timer);
+          endQuestion(game, io);
+        } else if (game.status === "leaderboard") {
+          game.currentQuestionIndex++;
+          if (game.currentQuestionIndex < game.questions.length) {
+            startGameLoop(game, io);
+          } else {
+            game.status = "finished";
+            io.to(game.pin).emit("game_over", {
+              leaderboard: getLeaderboard(game),
+            });
+          }
+        }
+      }
+    });
+
+    socket.on("disconnect", () => {
+      // Find if player was in any game
+      for (const [pin, game] of games.entries()) {
+        if (game.hostSocketId === socket.id) {
+          // Host disconnected, end game
+          io.to(pin).emit("host_disconnected");
+          games.delete(pin);
+        } else {
+          const playerIndex = game.players.findIndex((p) => p.id === socket.id);
+          if (playerIndex !== -1) {
+            const player = game.players[playerIndex];
+            game.players.splice(playerIndex, 1);
+            io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
+          }
+        }
+      }
+    });
+  });
+
+  function startGameLoop(game: GameState, io: Server) {
+    game.status = "question";
+    const currentQuestion = game.questions[game.currentQuestionIndex];
+    
+    // Reset player answers
+    game.players.forEach((p) => {
+      p.currentAnswerIndex = undefined;
+      p.answeredAt = undefined;
+    });
+
+    game.questionStartTime = Date.now();
+
+    // Send question to host and players
+    io.to(game.hostSocketId).emit("new_question", {
+      question: currentQuestion,
+      questionIndex: game.currentQuestionIndex,
+      totalQuestions: game.questions.length,
+    });
+
+    // Players don't get the correct answer or title/image, just options count/colors
+    // But for simplicity, let's send them the whole question without correctOptionIndex
+    const playerQuestion = {
+      title: currentQuestion.title,
+      image: currentQuestion.image,
+      options: currentQuestion.options,
+      timeLimit: currentQuestion.timeLimit,
+    };
+    
+    // Broadcast to players (excluding host)
+    game.players.forEach((p) => {
+      io.to(p.id).emit("new_question", { question: playerQuestion });
+    });
+
+    // Start timer
+    game.timer = setTimeout(() => {
+      endQuestion(game, io);
+    }, currentQuestion.timeLimit * 1000);
+  }
+
+  function endQuestion(game: GameState, io: Server) {
+    game.status = "leaderboard";
+    const currentQuestion = game.questions[game.currentQuestionIndex];
+    
+    // Calculate scores
+    game.players.forEach((p) => {
+      const prevScore = p.score;
+      if (p.currentAnswerIndex === currentQuestion.correctOptionIndex) {
+        // Base score + time bonus
+        const timeTaken = p.answeredAt ? p.answeredAt - (game.questionStartTime || 0) : currentQuestion.timeLimit * 1000;
+        const timeRatio = Math.max(0, 1 - timeTaken / (currentQuestion.timeLimit * 1000));
+        const points = Math.round(500 + 500 * timeRatio);
+        p.score += points;
+      }
+      
+      // Send results to players
+      io.to(p.id).emit("question_result", {
+        correct: p.currentAnswerIndex === currentQuestion.correctOptionIndex,
+        correctOptionIndex: currentQuestion.correctOptionIndex,
+        score: p.score,
+        pointsEarned: p.score - prevScore,
+      });
+    });
+
+    // Send results to host
+    const answerCounts = [0, 0, 0, 0];
+    game.players.forEach((p) => {
+      if (p.currentAnswerIndex !== undefined) {
+        answerCounts[p.currentAnswerIndex]++;
+      }
+    });
+
+    io.to(game.hostSocketId).emit("question_result", {
+      correctOptionIndex: currentQuestion.correctOptionIndex,
+      answerCounts,
+      leaderboard: getLeaderboard(game),
+    });
+  }
+
+  function getLeaderboard(game: GameState) {
+    return [...game.players].sort((a, b) => b.score - a.score).slice(0, 3);
+  }
+
+  // Vite middleware for development
+  if (process.env.NODE_ENV !== "production") {
+    const vite = await createViteServer({
+      server: { middlewareMode: true },
+      appType: "spa",
+    });
+    app.use(vite.middlewares);
+  } else {
+    app.use(express.static("dist"));
+  }
+
+  httpServer.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server running on http://localhost:${PORT}`);
+  });
+}
+
+startServer();
