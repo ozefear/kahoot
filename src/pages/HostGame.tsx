@@ -4,12 +4,11 @@ import { socket } from "../socket";
 import { Check, Trophy, ArrowRight, TrendingUp } from "lucide-react";
 import { SHAPES } from "../components/Shapes";
 import { motion } from "motion/react";
-
-const question10Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question10.mp3";
-const question20Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question20.mp3";
-const question30Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question30.mp3";
-const question60Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question60.mp3";
-const podiumAudio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/podium.mp3";
+import question10Audio from "../audio/question10.mp3";
+import question20Audio from "../audio/question20.mp3";
+import question30Audio from "../audio/question30.mp3";
+import question60Audio from "../audio/question60.mp3";
+import podiumAudio from "../audio/podium.mp3";
 
 const QUESTION_AUDIO: Record<number, string> = {
   10: question10Audio,

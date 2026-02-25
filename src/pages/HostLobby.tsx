@@ -4,8 +4,7 @@ import { socket } from "../socket";
 import { Users, Play, Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "motion/react";
-
-const lobbyAudio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/lobby.mp3";
+import lobbyAudio from "../audio/lobby.mp3";
 
 export default function HostLobby() {
   const { pin } = useParams();
