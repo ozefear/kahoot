@@ -4,6 +4,7 @@ import { Server } from "socket.io";
 import { createServer } from "http";
 import { v4 as uuidv4 } from "uuid";
 import Database from "better-sqlite3";
+import path from "path";
 
 const db = new Database("kahoot.db");
 db.exec(`
@@ -341,6 +342,9 @@ async function startServer() {
     app.use(vite.middlewares);
   } else {
     app.use(express.static("dist"));
+    app.get("*", (req, res) => {
+      res.sendFile(path.resolve("dist/index.html"));
+    });
   }
 
   httpServer.listen(PORT, "0.0.0.0", () => {

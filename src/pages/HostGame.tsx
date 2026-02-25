@@ -4,11 +4,12 @@ import { socket } from "../socket";
 import { Check, Trophy, ArrowRight, TrendingUp } from "lucide-react";
 import { SHAPES } from "../components/Shapes";
 import { motion } from "motion/react";
-import question10Audio from "../audio/question10.mp3";
-import question20Audio from "../audio/question20.mp3";
-import question30Audio from "../audio/question30.mp3";
-import question60Audio from "../audio/question60.mp3";
-import podiumAudio from "../audio/podium.mp3";
+
+const question10Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question10.mp3";
+const question20Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question20.mp3";
+const question30Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question30.mp3";
+const question60Audio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/question60.mp3";
+const podiumAudio = "https://github.com/ozefear/kahoot/raw/refs/heads/main/src/audio/podium.mp3";
 
 const QUESTION_AUDIO: Record<number, string> = {
   10: question10Audio,
@@ -252,21 +253,34 @@ export default function HostGame() {
         </button>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-8 max-w-6xl mx-auto w-full">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 w-full h-[calc(100vh-80px)] overflow-hidden">
         {step === "leaderboard" && resultData ? (
-          <div className="w-full max-w-4xl">
-            <h1 className="text-4xl md:text-6xl font-black text-center text-gray-800 mb-12">Top 5</h1>
-            <div className="space-y-4">
+          <div className="w-full max-w-4xl flex flex-col items-center">
+            <h1 className="text-4xl md:text-6xl font-black text-center text-gray-800 mb-8">Top 3</h1>
+            
+            {resultData.highestClimber && (
+              <motion.div 
+                initial={{ scale: 0.8, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ type: "spring", bounce: 0.5 }}
+                className="mb-10 flex items-center gap-3 bg-green-100 text-green-800 px-6 py-4 rounded-2xl font-black text-xl md:text-2xl shadow-sm border border-green-200"
+              >
+                <TrendingUp size={32} className="text-green-600" />
+                <span>{resultData.highestClimber.name} is on fire! Up {resultData.highestClimber.change} places!</span>
+              </motion.div>
+            )}
+
+            <div className="space-y-4 w-full">
               {resultData.leaderboard.map((player, idx) => (
                 <motion.div
                   key={player.id}
                   initial={{ x: -50, opacity: 0 }}
                   animate={{ x: 0, opacity: 1 }}
                   transition={{ delay: idx * 0.1 }}
-                  className="bg-white p-4 md:p-6 rounded-2xl shadow-md flex justify-between items-center text-xl md:text-2xl font-bold"
+                  className="bg-white p-4 md:p-6 rounded-2xl shadow-md flex justify-between items-center text-2xl md:text-3xl font-bold"
                 >
-                  <div className="flex items-center gap-4">
-                    <span className="text-gray-400 w-8">{idx + 1}.</span>
+                  <div className="flex items-center gap-6">
+                    <span className="text-gray-400 w-8 text-right">{idx + 1}.</span>
                     <span className="text-indigo-900">{player.name}</span>
                   </div>
                   <span className="text-indigo-600">{player.score}</span>
@@ -275,70 +289,73 @@ export default function HostGame() {
             </div>
           </div>
         ) : (
-          <>
-            <h1 className="text-3xl md:text-5xl font-black text-center text-gray-800 mb-6 md:mb-8">
+          <div className="flex flex-col w-full h-full max-w-7xl mx-auto">
+            <h1 className="text-3xl md:text-5xl font-black text-center text-gray-800 mb-4 flex-shrink-0">
               {question.title}
             </h1>
 
-            {question.image && (
-              <div className="w-full max-w-2xl h-48 md:h-64 bg-white rounded-2xl shadow-md overflow-hidden mb-6 md:mb-8">
-                <img src={question.image} alt="Question" className="w-full h-full object-cover" />
-              </div>
-            )}
-
-            <div className="flex justify-between w-full max-w-4xl mb-6 md:mb-8">
-              <div className="w-16 h-16 md:w-24 md:h-24 rounded-full bg-indigo-600 text-white flex items-center justify-center text-2xl md:text-4xl font-black shadow-lg">
+            <div className="flex-1 flex justify-between items-center min-h-0 mb-6 relative w-full">
+              <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-indigo-600 text-white flex items-center justify-center text-3xl md:text-5xl font-black shadow-lg flex-shrink-0 z-10">
                 {timeLeft}
               </div>
               
-              {showResult && resultData?.highestClimber && (
-                <motion.div 
-                  initial={{ y: 20, opacity: 0 }}
-                  animate={{ y: 0, opacity: 1 }}
-                  className="flex items-center gap-2 bg-green-100 text-green-800 px-4 py-2 rounded-xl font-bold text-sm md:text-lg shadow-sm"
-                >
-                  <TrendingUp size={24} />
-                  <span>{resultData.highestClimber.name} went up {resultData.highestClimber.change} places!</span>
-                </motion.div>
+              {question.image ? (
+                <div className="flex-1 h-full flex items-center justify-center px-4 md:px-8 min-w-0">
+                  <img src={question.image} alt="Question" className="max-h-full max-w-full object-contain rounded-2xl shadow-md" />
+                </div>
+              ) : (
+                <div className="flex-1" />
               )}
 
-              <div className="flex flex-col items-end justify-center">
-                <div className="text-3xl md:text-4xl font-black text-gray-800">{answersCount}</div>
-                <div className="text-sm md:text-xl font-bold text-gray-500 uppercase tracking-widest">Answers</div>
+              <div className="flex flex-col items-end justify-center flex-shrink-0 z-10">
+                <div className="text-4xl md:text-6xl font-black text-gray-800">{answersCount}</div>
+                <div className="text-lg md:text-2xl font-bold text-gray-500 uppercase tracking-widest">Answers</div>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full max-w-4xl">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full flex-shrink-0 h-48 md:h-64">
               {question.options.map((opt, index) => {
                 const Shape = SHAPES[index];
+                const isCorrect = showResult && resultData?.correctOptionIndex === index;
+                const isWrong = showResult && resultData?.correctOptionIndex !== index;
+                
                 return (
                   <div
                     key={index}
-                    className={`relative p-4 md:p-6 rounded-2xl shadow-md flex items-center gap-4 min-h-[80px] md:min-h-[120px] transition-opacity ${colors[index]} ${
-                      showResult && resultData?.correctOptionIndex !== index ? "opacity-30" : ""
-                    }`}
+                    className={`relative p-4 md:p-6 rounded-2xl shadow-md flex items-center gap-4 h-full transition-all duration-500 ${colors[index]} ${
+                      isWrong ? "opacity-30 scale-95 grayscale-[50%]" : ""
+                    } ${isCorrect ? "ring-8 ring-white/50 z-10 scale-[1.02]" : ""}`}
                   >
-                    <div className="w-8 h-8 md:w-12 md:h-12 flex-shrink-0 text-white flex items-center justify-center">
+                    <div className="w-10 h-10 md:w-16 md:h-16 flex-shrink-0 text-white flex items-center justify-center">
                       <Shape className="w-full h-full" />
                     </div>
-                    <div className="text-white text-xl md:text-3xl font-bold flex-1">{opt}</div>
+                    <div className="text-white text-2xl md:text-4xl font-bold flex-1 break-words leading-tight">{opt}</div>
                     
-                    {showResult && resultData?.correctOptionIndex === index && (
-                      <div className="absolute top-2 right-2 md:top-4 md:right-4 bg-white/20 p-1 md:p-2 rounded-full">
-                        <Check size={24} className="text-white md:w-8 md:h-8" />
-                      </div>
+                    {isCorrect && (
+                      <motion.div 
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        transition={{ type: "spring", bounce: 0.6 }}
+                        className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg"
+                      >
+                        <Check size={32} className="text-green-500" />
+                      </motion.div>
                     )}
                     
                     {showResult && resultData && (
-                      <div className="absolute bottom-2 right-2 md:bottom-4 md:right-4 bg-black/30 px-3 py-1 md:px-4 md:py-1 rounded-full text-white font-bold text-lg md:text-xl">
+                      <motion.div 
+                        initial={{ opacity: 0, y: 20 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className="absolute bottom-4 right-4 bg-black/40 px-4 py-2 rounded-full text-white font-black text-2xl md:text-3xl shadow-inner"
+                      >
                         {resultData.answerCounts[index]}
-                      </div>
+                      </motion.div>
                     )}
                   </div>
                 );
               })}
             </div>
-          </>
+          </div>
         )}
       </div>
     </div>
