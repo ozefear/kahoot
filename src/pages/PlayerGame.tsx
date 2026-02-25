@@ -32,10 +32,35 @@ export default function PlayerGame() {
   const [rank, setRank] = useState(0);
 
   useEffect(() => {
-    if (!name) {
+    const storedName = name || sessionStorage.getItem("playerName");
+    const storedPin = pin || sessionStorage.getItem("gamePin");
+
+    if (!storedName || !storedPin) {
       navigate("/");
       return;
     }
+
+    if (name && pin) {
+      sessionStorage.setItem("playerName", name);
+      sessionStorage.setItem("gamePin", pin);
+    }
+
+    // Attempt to rejoin if we refreshed
+    socket.emit("rejoin_player", { pin: storedPin, name: storedName }, (res: any) => {
+      if (res.success) {
+        const game = res.game;
+        const player = res.player;
+        setQuestion(game.questions[game.currentQuestionIndex]);
+        if (player.currentAnswerIndex !== undefined) {
+          setAnswered(true);
+        }
+        if (game.status === "leaderboard" && player.lastResult) {
+          setResult(player.lastResult);
+        }
+      } else if (!name) {
+        navigate("/");
+      }
+    });
 
     socket.on("new_question", (data) => {
       setQuestion(data.question);

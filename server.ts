@@ -87,6 +87,33 @@ async function startServer() {
       }
     });
 
+    socket.on("rejoin_host", (data: { pin: string }, callback) => {
+      const game = games.get(data.pin);
+      if (game) {
+        game.hostSocketId = socket.id;
+        socket.join(data.pin);
+        callback({ success: true, game });
+      } else {
+        callback({ error: "Game not found" });
+      }
+    });
+
+    socket.on("rejoin_player", (data: { pin: string; name: string }, callback) => {
+      const game = games.get(data.pin);
+      if (game) {
+        const player = game.players.find(p => p.name === data.name);
+        if (player) {
+          player.id = socket.id;
+          socket.join(data.pin);
+          callback({ success: true, game, player });
+        } else {
+          callback({ error: "Player not found" });
+        }
+      } else {
+        callback({ error: "Game not found" });
+      }
+    });
+
     // Host creates a game
     socket.on("host_create_game", (data: { questions: Question[] }, callback) => {
       const pin = Math.floor(100000 + Math.random() * 900000).toString();
@@ -184,14 +211,13 @@ async function startServer() {
       // Find if player was in any game
       for (const [pin, game] of games.entries()) {
         if (game.hostSocketId === socket.id) {
-          // Host disconnected, end game
+          // Host disconnected, don't delete game immediately so they can rejoin
           io.to(pin).emit("host_disconnected");
-          games.delete(pin);
         } else {
           const playerIndex = game.players.findIndex((p) => p.id === socket.id);
           if (playerIndex !== -1) {
             const player = game.players[playerIndex];
-            game.players.splice(playerIndex, 1);
+            // Don't remove player so they can rejoin
             io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
           }
         }
@@ -261,13 +287,14 @@ async function startServer() {
       }
       
       // Send results to players
-      io.to(p.id).emit("question_result", {
+      p.lastResult = {
         correct: p.currentAnswerIndex === currentQuestion.correctOptionIndex,
         correctOptionIndex: currentQuestion.correctOptionIndex,
         score: p.score,
         pointsEarned: p.score - prevScore,
         streak: p.streak,
-      });
+      };
+      io.to(p.id).emit("question_result", p.lastResult);
     });
 
     const newLeaderboard = [...game.players].sort((a, b) => b.score - a.score);
@@ -289,12 +316,15 @@ async function startServer() {
       }
     });
 
-    io.to(game.hostSocketId).emit("question_result", {
+    const resultData = {
       correctOptionIndex: currentQuestion.correctOptionIndex,
       answerCounts,
       leaderboard: getLeaderboard(game),
       highestClimber,
-    });
+    };
+    game.lastResultData = resultData;
+
+    io.to(game.hostSocketId).emit("question_result", resultData);
   }
 
   function getLeaderboard(game: GameState) {

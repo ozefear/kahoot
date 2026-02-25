@@ -13,6 +13,13 @@ export default function HostLobby() {
   const [copied, setCopied] = useState(false);
 
   useEffect(() => {
+    // Attempt to rejoin if we refreshed
+    socket.emit("rejoin_host", { pin }, (res: any) => {
+      if (res.success) {
+        setPlayers(res.game.players);
+      }
+    });
+
     socket.on("player_joined", (player) => {
       setPlayers((prev) => [...prev, player]);
     });

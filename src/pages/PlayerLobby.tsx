@@ -9,13 +9,28 @@ export default function PlayerLobby() {
   const name = location.state?.name;
 
   useEffect(() => {
-    if (!name) {
+    const storedName = name || sessionStorage.getItem("playerName");
+    const storedPin = pin || sessionStorage.getItem("gamePin");
+
+    if (!storedName || !storedPin) {
       navigate("/");
       return;
     }
 
+    if (name && pin) {
+      sessionStorage.setItem("playerName", name);
+      sessionStorage.setItem("gamePin", pin);
+    }
+
+    // Rejoin if refreshed
+    socket.emit("rejoin_player", { pin: storedPin, name: storedName }, (res: any) => {
+      if (!res.success && !name) {
+        navigate("/");
+      }
+    });
+
     socket.on("new_question", (data) => {
-      navigate(`/player/game/${pin}`, { state: { name, initialQuestion: data.question } });
+      navigate(`/player/game/${storedPin}`, { state: { name: storedName, initialQuestion: data.question } });
     });
 
     socket.on("host_disconnected", () => {
