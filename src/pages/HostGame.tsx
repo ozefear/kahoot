@@ -1,9 +1,21 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { socket } from "../socket";
 import { Check, Trophy, ArrowRight, TrendingUp } from "lucide-react";
 import { SHAPES } from "../components/Shapes";
 import { motion } from "motion/react";
+import question10Audio from "../audio/question10.mp3";
+import question20Audio from "../audio/question20.mp3";
+import question30Audio from "../audio/question30.mp3";
+import question60Audio from "../audio/question60.mp3";
+import podiumAudio from "../audio/podium.mp3";
+
+const QUESTION_AUDIO: Record<number, string> = {
+  10: question10Audio,
+  20: question20Audio,
+  30: question30Audio,
+  60: question60Audio,
+};
 
 type Question = {
   title: string;
@@ -42,6 +54,28 @@ export default function HostGame() {
   const [gameOver, setGameOver] = useState(false);
   const [finalLeaderboard, setFinalLeaderboard] = useState<LeaderboardEntry[]>([]);
 
+  // Audio refs
+  const questionAudioRef = useRef<HTMLAudioElement | null>(null);
+  const podiumAudioRef = useRef<HTMLAudioElement | null>(null);
+  const currentQuestionTimeLimit = useRef<number>(20);
+
+  useEffect(() => {
+    // Initialize audio objects
+    podiumAudioRef.current = new Audio(podiumAudio);
+
+    return () => {
+      // Cleanup audio on unmount
+      if (questionAudioRef.current) {
+        questionAudioRef.current.pause();
+        questionAudioRef.current.currentTime = 0;
+      }
+      if (podiumAudioRef.current) {
+        podiumAudioRef.current.pause();
+        podiumAudioRef.current.currentTime = 0;
+      }
+    };
+  }, []);
+
   useEffect(() => {
     socket.on("new_question", (data) => {
       setQuestion(data.question);
@@ -51,6 +85,18 @@ export default function HostGame() {
       setAnswersCount(0);
       setShowResult(false);
       setResultData(null);
+      
+      currentQuestionTimeLimit.current = data.question.timeLimit;
+
+      // Play question music
+      if (questionAudioRef.current) {
+        questionAudioRef.current.pause();
+        questionAudioRef.current.currentTime = 0;
+      }
+      
+      const audioSrc = QUESTION_AUDIO[data.question.timeLimit] || question20Audio;
+      questionAudioRef.current = new Audio(audioSrc);
+      questionAudioRef.current.play().catch(e => console.log("Audio play prevented"));
     });
 
     socket.on("player_answered", () => {
@@ -60,11 +106,27 @@ export default function HostGame() {
     socket.on("question_result", (data) => {
       setShowResult(true);
       setResultData(data);
+
+      // If answered early, skip to the result sound part of the audio
+      if (questionAudioRef.current) {
+        const timeLimit = currentQuestionTimeLimit.current;
+        if (questionAudioRef.current.currentTime < timeLimit) {
+           questionAudioRef.current.currentTime = timeLimit;
+        }
+      }
     });
 
     socket.on("game_over", (data) => {
       setGameOver(true);
       setFinalLeaderboard(data.leaderboard);
+
+      // Stop other music, play podium music
+      if (questionAudioRef.current) {
+        questionAudioRef.current.pause();
+      }
+      if (podiumAudioRef.current) {
+        podiumAudioRef.current.play().catch(e => console.log("Audio play prevented"));
+      }
     });
 
     return () => {

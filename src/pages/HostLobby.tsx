@@ -4,6 +4,7 @@ import { socket } from "../socket";
 import { Users, Play, Copy, Check } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "motion/react";
+import lobbyAudio from "../audio/lobby.mp3";
 
 export default function HostLobby() {
   const { pin } = useParams();
@@ -30,6 +31,25 @@ export default function HostLobby() {
     socket.emit("host_start_game", { pin });
     navigate(`/host/game/${pin}`);
   };
+
+  useEffect(() => {
+    const audio = new Audio(lobbyAudio);
+    audio.loop = true;
+    audio.volume = 0.5;
+    
+    // Attempt to play, catch autoplay restrictions
+    const playPromise = audio.play();
+    if (playPromise !== undefined) {
+      playPromise.catch(error => {
+        console.log("Autoplay prevented. User interaction needed.", error);
+      });
+    }
+
+    return () => {
+      audio.pause();
+      audio.currentTime = 0;
+    };
+  }, []);
 
   const joinUrl = `${window.location.origin}/?pin=${pin}`;
 
