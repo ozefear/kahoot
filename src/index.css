@@ -1,1 +1,11 @@
 @import "tailwindcss";
+
+@theme {
+  --color-quiz-bg: #130f26;
+  --color-quiz-card: #1e1b38;
+}
+
+.bg-dot-pattern {
+  background-image: radial-gradient(rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+  background-size: 24px 24px;
+}

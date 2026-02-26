@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Users, Play, Copy, Check } from "lucide-react";
+import { Users, Play, Copy, Check, Volume2, Settings, Sparkles } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "motion/react";
 import lobbyAudio from "../audio/lobby.mp3";
@@ -21,7 +21,10 @@ export default function HostLobby() {
     });
 
     socket.on("player_joined", (player) => {
-      setPlayers((prev) => [...prev, player]);
+      setPlayers((prev) => {
+        if (prev.find(p => p.name === player.name)) return prev;
+        return [...prev, player];
+      });
     });
 
     socket.on("player_left", ({ playerId }) => {
@@ -66,50 +69,84 @@ export default function HostLobby() {
     setTimeout(() => setCopied(false), 2000);
   };
 
-  return (
-    <div className="min-h-screen bg-indigo-600 flex flex-col items-center justify-center p-4 md:p-8">
-      <motion.div 
-        initial={{ scale: 0.9, opacity: 0 }}
-        animate={{ scale: 1, opacity: 1 }}
-        className="bg-white rounded-3xl shadow-2xl p-6 md:p-12 text-center max-w-4xl w-full"
-      >
-        <div className="flex flex-col md:flex-row items-center justify-center gap-8 mb-12">
-          <div className="flex-1">
-            <h2 className="text-xl md:text-2xl font-bold text-gray-500 mb-4 uppercase tracking-widest">
-              Join at www.kahoot.it with Game PIN:
-            </h2>
-            <div className="text-6xl md:text-8xl font-black text-indigo-600 mb-6 tracking-tighter">
-              {pin}
-            </div>
-            <button
-              onClick={handleCopy}
-              className="inline-flex items-center gap-2 bg-gray-100 hover:bg-gray-200 text-gray-700 font-bold py-2 px-6 rounded-full transition-colors"
-            >
-              {copied ? <Check size={20} className="text-green-500" /> : <Copy size={20} />}
-              {copied ? "Copied!" : "Copy Link"}
-            </button>
-          </div>
-          <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-100">
-            <QRCodeSVG value={joinUrl} size={160} />
-          </div>
-        </div>
+  const pinDigits = pin ? pin.split("") : [];
 
-        <div className="flex flex-col sm:flex-row justify-between items-center gap-4 mb-8">
-          <div className="flex items-center gap-3 text-xl md:text-2xl font-bold text-gray-700 bg-gray-100 px-6 py-3 rounded-2xl w-full sm:w-auto justify-center">
-            <Users size={32} className="text-indigo-600" />
-            {players.length} Players
+  return (
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-violet-500/30">
+      {/* Header */}
+      <header className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-black/20 backdrop-blur-md">
+        <div className="flex items-center gap-3">
+          <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30">
+            <Sparkles className="w-6 h-6 text-violet-400" />
           </div>
+          <span className="text-2xl font-bold tracking-tight">QuizMaster</span>
+        </div>
+        
+        <div className="flex items-center gap-6">
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium">
+            <Volume2 size={20} />
+            Müzik
+          </button>
+          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium">
+            <Settings size={20} />
+            Ayarlar
+          </button>
+          <div className="w-px h-8 bg-white/10 mx-2"></div>
           <button
             onClick={handleStartGame}
             disabled={players.length === 0}
-            className="bg-green-500 text-white px-10 py-4 rounded-2xl font-black text-xl md:text-2xl hover:bg-green-600 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-3 transition-transform hover:scale-105 active:scale-95 w-full sm:w-auto"
+            className="bg-violet-500 hover:bg-violet-600 text-white px-8 py-2.5 rounded-full font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]"
           >
-            <Play size={32} />
-            Start Game
+            Oyunu Başlat
           </button>
         </div>
+      </header>
 
-        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-4 mt-8">
+      {/* Main Content */}
+      <main className="flex-1 flex flex-col items-center pt-16 px-4">
+        <motion.div 
+          initial={{ y: 20, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          className="text-center mb-12"
+        >
+          <h1 className="text-4xl md:text-5xl font-bold mb-3">
+            <span className="text-white">Şuradan katılın: </span>
+            <span className="text-violet-400 cursor-pointer hover:text-violet-300 transition-colors" onClick={handleCopy}>
+              quizmaster.live
+            </span>
+          </h1>
+          <p className="text-gray-400 font-bold tracking-[0.2em] text-sm uppercase">
+            6 Haneli PIN'i Girin
+          </p>
+        </motion.div>
+
+        {/* PIN Display */}
+        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 mb-16 shadow-2xl backdrop-blur-sm">
+          <div className="flex gap-3 md:gap-6 justify-center">
+            {pinDigits.map((digit, index) => (
+              <motion.div
+                key={index}
+                initial={{ scale: 0.5, opacity: 0 }}
+                animate={{ scale: 1, opacity: 1 }}
+                transition={{ delay: index * 0.1, type: "spring" }}
+                className="w-16 h-24 md:w-24 md:h-32 bg-[var(--color-quiz-card)] rounded-2xl flex items-center justify-center text-5xl md:text-7xl font-black shadow-inner border border-white/5"
+              >
+                {digit}
+              </motion.div>
+            ))}
+          </div>
+        </div>
+
+        {/* Players Count */}
+        <div className="flex items-center gap-3 bg-violet-900/30 border border-violet-500/30 px-6 py-2.5 rounded-full mb-12">
+          <Users size={20} className="text-violet-400" />
+          <span className="font-bold text-violet-200 tracking-wider text-sm">
+            {players.length} OYUNCU KATILDI
+          </span>
+        </div>
+
+        {/* Players Grid */}
+        <div className="w-full max-w-5xl flex flex-wrap justify-center gap-4 pb-12">
           <AnimatePresence mode="popLayout">
             {players.map((player) => (
               <motion.div
@@ -119,19 +156,19 @@ export default function HostLobby() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", bounce: 0.3 }}
-                className="bg-indigo-50 text-indigo-900 font-bold text-lg md:text-xl py-3 px-4 md:px-6 rounded-xl truncate shadow-sm border border-indigo-100"
+                className="bg-[var(--color-quiz-card)] border border-white/10 text-gray-200 font-semibold py-3 px-8 rounded-full shadow-sm hover:bg-white/5 transition-colors"
               >
                 {player.name}
               </motion.div>
             ))}
           </AnimatePresence>
           {players.length === 0 && (
-            <div className="col-span-full text-gray-400 font-medium text-lg italic py-8">
-              Waiting for players to join...
+            <div className="text-gray-500 font-medium italic py-8">
+              Oyuncuların katılması bekleniyor...
             </div>
           )}
         </div>
-      </motion.div>
+      </main>
     </div>
   );
 }

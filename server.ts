@@ -5,6 +5,7 @@ import { createServer } from "http";
 import { v4 as uuidv4 } from "uuid";
 import Database from "better-sqlite3";
 import path from "path";
+import fs from "fs";
 
 const db = new Database("kahoot.db");
 db.exec(`
@@ -33,6 +34,8 @@ type Player = {
   currentAnswerIndex?: number;
   answeredAt?: number; // timestamp
   streak: number;
+  isConnected?: boolean;
+  lastResult?: any;
 };
 
 type GameState = {
@@ -44,6 +47,7 @@ type GameState = {
   players: Player[];
   questionStartTime?: number;
   timer?: NodeJS.Timeout;
+  lastResultData?: any;
 };
 
 const games = new Map<string, GameState>();
@@ -73,7 +77,7 @@ async function startServer() {
         stmt.run(id, data.hostNickname, data.title, JSON.stringify(data.questions));
         callback({ success: true, id });
       } catch (e) {
-        callback({ error: "Failed to save" });
+        callback({ error: "Kaydetme başarısız" });
       }
     });
 
@@ -84,7 +88,7 @@ async function startServer() {
         const sets = rows.map(r => ({ ...r, questions: JSON.parse(r.questions) }));
         callback({ success: true, sets });
       } catch (e) {
-        callback({ error: "Failed to load" });
+        callback({ error: "Yükleme başarısız" });
       }
     });
 
@@ -96,7 +100,7 @@ async function startServer() {
         const { timer, ...safeGame } = game;
         callback({ success: true, game: safeGame });
       } else {
-        callback({ error: "Game not found" });
+        callback({ error: "Oyun bulunamadı" });
       }
     });
 
@@ -106,14 +110,19 @@ async function startServer() {
         const player = game.players.find(p => p.name === data.name);
         if (player) {
           player.id = socket.id;
+          player.isConnected = true;
           socket.join(data.pin);
           const { timer, ...safeGame } = game;
+          
+          // Notify host they are back
+          io.to(game.hostSocketId).emit("player_joined", player);
+          
           callback({ success: true, game: safeGame, player });
         } else {
-          callback({ error: "Player not found" });
+          callback({ error: "Oyuncu bulunamadı" });
         }
       } else {
-        callback({ error: "Game not found" });
+        callback({ error: "Oyun bulunamadı" });
       }
     });
 
@@ -138,10 +147,10 @@ async function startServer() {
     socket.on("player_join", (data: { pin: string; name: string }, callback) => {
       const game = games.get(data.pin);
       if (!game) {
-        return callback({ error: "Game not found" });
+        return callback({ error: "Oyun bulunamadı" });
       }
       if (game.status !== "lobby") {
-        return callback({ error: "Game already started" });
+        return callback({ error: "Oyun zaten başladı" });
       }
       
       const newPlayer: Player = {
@@ -149,6 +158,7 @@ async function startServer() {
         name: data.name,
         score: 0,
         streak: 0,
+        isConnected: true,
       };
       game.players.push(newPlayer);
       socket.join(data.pin);
@@ -178,8 +188,9 @@ async function startServer() {
           // Notify host that a player answered
           io.to(game.hostSocketId).emit("player_answered", { playerId: player.id });
 
-          // Check if all players answered
-          const allAnswered = game.players.every((p) => p.currentAnswerIndex !== undefined);
+          // Check if all connected players answered
+          const connectedPlayers = game.players.filter(p => p.isConnected);
+          const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.currentAnswerIndex !== undefined);
           if (allAnswered && game.timer) {
             clearTimeout(game.timer);
             endQuestion(game, io);
@@ -219,8 +230,19 @@ async function startServer() {
           const playerIndex = game.players.findIndex((p) => p.id === socket.id);
           if (playerIndex !== -1) {
             const player = game.players[playerIndex];
+            player.isConnected = false;
             // Don't remove player so they can rejoin
             io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
+            
+            // If they disconnected during a question, check if we should end it
+            if (game.status === "question") {
+              const connectedPlayers = game.players.filter(p => p.isConnected);
+              const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.currentAnswerIndex !== undefined);
+              if (allAnswered && game.timer) {
+                clearTimeout(game.timer);
+                endQuestion(game, io);
+              }
+            }
           }
         }
       }
@@ -334,7 +356,9 @@ async function startServer() {
   }
 
   // Vite middleware for development
-  if (process.env.NODE_ENV !== "production") {
+  const isProd = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve("dist/index.html"));
+  
+  if (!isProd) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
       appType: "spa",

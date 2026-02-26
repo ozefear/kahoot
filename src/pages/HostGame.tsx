@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Check, Trophy, ArrowRight, TrendingUp } from "lucide-react";
+import { Check, Trophy, ArrowRight, TrendingUp, Volume2, VolumeX } from "lucide-react";
 import { SHAPES } from "../components/Shapes";
 import { motion } from "motion/react";
 import question10Audio from "../audio/question10.mp3";
@@ -184,37 +184,37 @@ export default function HostGame() {
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-indigo-600 flex flex-col items-center justify-center p-4 md:p-8 text-white">
-        <Trophy size={80} className="text-yellow-400 mb-8" />
-        <h1 className="text-4xl md:text-6xl font-black mb-12">Podium</h1>
+      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white selection:bg-violet-500/30">
+        <Trophy size={80} className="text-yellow-400 mb-8 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+        <h1 className="text-4xl md:text-6xl font-black mb-12">Kürsü</h1>
         <div className="flex items-end gap-4 md:gap-8 h-64 md:h-96">
           {finalLeaderboard[1] && (
             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, type: "spring" }} className="flex flex-col items-center">
               <div className="text-xl md:text-2xl font-bold mb-4 truncate w-24 md:w-32 text-center">{finalLeaderboard[1].name}</div>
-              <div className="w-24 md:w-32 h-32 md:h-48 bg-gray-300 rounded-t-xl flex items-center justify-center text-4xl font-black text-gray-800">2</div>
-              <div className="mt-4 font-bold text-lg md:text-xl">{finalLeaderboard[1].score}</div>
+              <div className="w-24 md:w-32 h-32 md:h-48 bg-white/10 border border-white/20 rounded-t-3xl flex items-center justify-center text-4xl font-black text-gray-300">2</div>
+              <div className="mt-4 font-bold text-lg md:text-xl text-gray-400">{finalLeaderboard[1].score} puan</div>
             </motion.div>
           )}
           {finalLeaderboard[0] && (
             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 1, type: "spring" }} className="flex flex-col items-center">
               <div className="text-2xl md:text-3xl font-bold mb-4 truncate w-32 md:w-40 text-center">{finalLeaderboard[0].name}</div>
-              <div className="w-32 md:w-40 h-48 md:h-64 bg-yellow-400 rounded-t-xl flex items-center justify-center text-6xl font-black text-yellow-800">1</div>
-              <div className="mt-4 font-bold text-xl md:text-2xl">{finalLeaderboard[0].score}</div>
+              <div className="w-32 md:w-40 h-48 md:h-64 bg-yellow-400/20 border-2 border-yellow-400 rounded-t-3xl flex items-center justify-center text-6xl font-black text-yellow-400 shadow-[0_0_30px_rgba(250,204,21,0.2)]">1</div>
+              <div className="mt-4 font-bold text-xl md:text-2xl text-yellow-400">{finalLeaderboard[0].score} puan</div>
             </motion.div>
           )}
           {finalLeaderboard[2] && (
             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ type: "spring" }} className="flex flex-col items-center">
               <div className="text-lg md:text-xl font-bold mb-4 truncate w-20 md:w-28 text-center">{finalLeaderboard[2].name}</div>
-              <div className="w-20 md:w-28 h-24 md:h-32 bg-orange-400 rounded-t-xl flex items-center justify-center text-3xl font-black text-orange-900">3</div>
-              <div className="mt-4 font-bold text-base md:text-lg">{finalLeaderboard[2].score}</div>
+              <div className="w-20 md:w-28 h-24 md:h-32 bg-orange-400/20 border border-orange-400 rounded-t-3xl flex items-center justify-center text-3xl font-black text-orange-400">3</div>
+              <div className="mt-4 font-bold text-base md:text-lg text-orange-400">{finalLeaderboard[2].score} puan</div>
             </motion.div>
           )}
         </div>
         <button
           onClick={() => navigate("/")}
-          className="mt-16 bg-white text-indigo-600 px-8 py-3 rounded-xl font-bold text-xl hover:bg-gray-100"
+          className="mt-16 bg-violet-500 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-violet-600 transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]"
         >
-          Back to Home
+          Ana Sayfaya Dön
         </button>
       </div>
     );
@@ -222,97 +222,115 @@ export default function HostGame() {
 
   if (!question) {
     return (
-      <div className="min-h-screen bg-indigo-600 flex items-center justify-center text-white text-4xl font-bold">
-        Loading...
+      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex items-center justify-center text-white text-4xl font-bold">
+        Yükleniyor...
       </div>
     );
   }
 
   const colors = ["bg-red-500", "bg-blue-500", "bg-yellow-500", "bg-green-500"];
+  const borderColors = ["border-red-500", "border-blue-500", "border-yellow-500", "border-green-500"];
+  const textColors = ["text-red-500", "text-blue-500", "text-yellow-500", "text-green-500"];
 
   return (
-    <div className="min-h-screen bg-gray-100 flex flex-col">
-      <header className="bg-white shadow-sm p-4 flex justify-between items-center">
-        <div className="flex items-center gap-4">
-          <div className="text-lg md:text-xl font-bold text-gray-500">
-            Question {questionIndex + 1} of {totalQuestions}
-          </div>
-          {!audioEnabled && (
-            <button onClick={enableAudio} className="bg-red-100 text-red-600 px-3 py-1 rounded-lg font-bold text-sm">
-              Enable Audio
-            </button>
-          )}
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-violet-500/30">
+      <header className="flex justify-between items-center px-8 py-6">
+        <div className="flex flex-col">
+          <span className="text-gray-400 font-bold tracking-[0.2em] text-xs uppercase mb-1">
+            Quiz Oturumu
+          </span>
+          <span className="text-xl font-bold">
+            PIN: <span className="text-violet-400">{pin}</span>
+          </span>
         </div>
-        <div className="text-2xl md:text-3xl font-black text-indigo-600">PIN: {pin}</div>
-        <button
-          onClick={handleNext}
-          className="bg-indigo-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-indigo-700 flex items-center gap-2"
-        >
-          {showResult ? "Next" : "Skip"} <ArrowRight size={20} />
-        </button>
+        
+        <div className="flex items-center gap-6">
+          <button onClick={enableAudio} className="text-gray-400 hover:text-white transition-colors">
+            {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} className="text-red-400" />}
+          </button>
+          <div className="flex flex-col items-end">
+            <span className="text-gray-400 font-bold tracking-[0.2em] text-xs uppercase mb-1">
+              Soru
+            </span>
+            <span className="text-xl font-bold">
+              {questionIndex + 1} <span className="text-gray-500">/ {totalQuestions}</span>
+            </span>
+          </div>
+        </div>
       </header>
 
-      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 w-full h-[calc(100vh-80px)] overflow-hidden">
+      <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 w-full h-[calc(100vh-100px)] overflow-hidden relative">
         {step === "leaderboard" && resultData ? (
-          <div className="w-full max-w-4xl flex flex-col items-center">
-            <h1 className="text-4xl md:text-6xl font-black text-center text-gray-800 mb-8">Top 3</h1>
+          <div className="w-full max-w-5xl flex flex-col items-center h-full justify-end pb-12">
             
             {resultData.highestClimber && (
               <motion.div 
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", bounce: 0.5 }}
-                className="mb-10 flex items-center gap-3 bg-green-100 text-green-800 px-6 py-4 rounded-2xl font-black text-xl md:text-2xl shadow-sm border border-green-200"
+                className="absolute top-10 flex items-center gap-3 bg-violet-900/30 text-violet-200 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-violet-500/30"
               >
-                <TrendingUp size={32} className="text-green-600" />
-                <span>{resultData.highestClimber.name} is on fire! Up {resultData.highestClimber.change} places!</span>
+                <TrendingUp size={24} className="text-violet-400" />
+                <span>{resultData.highestClimber.name} yükselişte! {resultData.highestClimber.change} sıra atladı!</span>
               </motion.div>
             )}
 
-            <div className="space-y-4 w-full">
-              {resultData.leaderboard.map((player, idx) => (
-                <motion.div
-                  key={player.id}
-                  initial={{ x: -50, opacity: 0 }}
-                  animate={{ x: 0, opacity: 1 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className="bg-white p-4 md:p-6 rounded-2xl shadow-md flex justify-between items-center text-2xl md:text-3xl font-bold"
-                >
-                  <div className="flex items-center gap-6">
-                    <span className="text-gray-400 w-8 text-right">{idx + 1}.</span>
-                    <span className="text-indigo-900">{player.name}</span>
+            <div className="flex items-end justify-center gap-4 md:gap-8 h-64 md:h-96 w-full mt-20">
+              {/* 2nd Place */}
+              {resultData.leaderboard[1] && (
+                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[200px]">
+                  <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center">{resultData.leaderboard[1].name}</div>
+                  <div className="text-gray-400 text-sm mb-4">{resultData.leaderboard[1].score} puan</div>
+                  <div className="w-full h-40 md:h-56 bg-white/5 border border-white/10 rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-gray-400/50"></div>
+                    <div className="w-12 h-12 rounded-full border-2 border-gray-400/50 flex items-center justify-center text-xl font-bold text-gray-300">2</div>
                   </div>
-                  <span className="text-indigo-600">{player.score}</span>
                 </motion.div>
-              ))}
+              )}
+              
+              {/* 1st Place */}
+              {resultData.leaderboard[0] && (
+                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[240px] z-10">
+                  <Trophy size={40} className="text-yellow-400 mb-2 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
+                  <div className="text-3xl md:text-4xl font-black mb-2 truncate w-full text-center">{resultData.leaderboard[0].name}</div>
+                  <div className="text-yellow-400 font-bold mb-4">{resultData.leaderboard[0].score} puan</div>
+                  <div className="w-full h-56 md:h-72 bg-white/10 border border-white/20 rounded-t-3xl flex items-start justify-center pt-8 relative overflow-hidden shadow-[0_-10px_40px_rgba(250,204,21,0.1)]">
+                    <div className="absolute top-0 left-0 right-0 h-2 bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.8)]"></div>
+                    <div className="w-16 h-16 rounded-full border-4 border-yellow-400 flex items-center justify-center text-3xl font-black text-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]">1</div>
+                  </div>
+                </motion.div>
+              )}
+
+              {/* 3rd Place */}
+              {resultData.leaderboard[2] && (
+                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[200px]">
+                  <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center text-orange-300">{resultData.leaderboard[2].name}</div>
+                  <div className="text-gray-400 text-sm mb-4">{resultData.leaderboard[2].score} puan</div>
+                  <div className="w-full h-32 md:h-48 bg-white/5 border border-white/10 rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
+                    <div className="absolute top-0 left-0 right-0 h-1 bg-orange-400/50"></div>
+                    <div className="w-12 h-12 rounded-full border-2 border-orange-400/50 flex items-center justify-center text-xl font-bold text-orange-300">3</div>
+                  </div>
+                </motion.div>
+              )}
             </div>
           </div>
         ) : (
-          <div className="flex flex-col w-full h-full max-w-7xl mx-auto">
-            <h1 className="text-3xl md:text-5xl font-black text-center text-gray-800 mb-4 flex-shrink-0">
+          <div className="flex flex-col w-full h-full max-w-6xl mx-auto">
+            <h1 className="text-3xl md:text-5xl font-bold text-center mb-8 flex-shrink-0 leading-tight">
               {question.title}
             </h1>
 
-            <div className="flex-1 flex justify-between items-center min-h-0 mb-6 relative w-full">
-              <div className="w-20 h-20 md:w-28 md:h-28 rounded-full bg-indigo-600 text-white flex items-center justify-center text-3xl md:text-5xl font-black shadow-lg flex-shrink-0 z-10">
-                {timeLeft}
-              </div>
-              
-              {question.image ? (
-                <div className="flex-1 h-full flex items-center justify-center px-4 md:px-8 min-w-0">
-                  <img src={question.image} alt="Question" className="max-h-full max-w-full object-contain rounded-2xl shadow-md" />
-                </div>
-              ) : (
-                <div className="flex-1" />
+            <div className="flex-1 relative w-full mb-8 flex items-center justify-center min-h-0">
+              {question.image && (
+                <img src={question.image} alt="Question" className="absolute inset-0 w-full h-full object-cover rounded-3xl opacity-80" />
               )}
-
-              <div className="flex flex-col items-end justify-center flex-shrink-0 z-10">
-                <div className="text-4xl md:text-6xl font-black text-gray-800">{answersCount}</div>
-                <div className="text-lg md:text-2xl font-bold text-gray-500 uppercase tracking-widest">Answers</div>
+              
+              <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-black/50 backdrop-blur-md border-4 border-violet-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+                {timeLeft}
               </div>
             </div>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 md:gap-4 w-full flex-shrink-0 h-48 md:h-64">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full flex-shrink-0">
               {question.options.map((opt, index) => {
                 const Shape = SHAPES[index];
                 const isCorrect = showResult && resultData?.correctOptionIndex === index;
@@ -321,33 +339,33 @@ export default function HostGame() {
                 return (
                   <div
                     key={index}
-                    className={`relative p-4 md:p-6 rounded-2xl shadow-md flex items-center gap-4 h-full transition-all duration-500 ${colors[index]} ${
-                      isWrong ? "opacity-30 scale-95 grayscale-[50%]" : ""
-                    } ${isCorrect ? "ring-8 ring-white/50 z-10 scale-[1.02]" : ""}`}
+                    className={`relative p-5 md:p-6 rounded-2xl flex items-center gap-6 transition-all duration-500 bg-[var(--color-quiz-card)] border-l-8 ${borderColors[index]} ${
+                      isWrong ? "opacity-40 scale-[0.98] grayscale-[30%]" : ""
+                    } ${isCorrect ? "ring-2 ring-white/20 z-10 scale-[1.02] bg-white/10" : ""}`}
                   >
-                    <div className="w-10 h-10 md:w-16 md:h-16 flex-shrink-0 text-white flex items-center justify-center">
+                    <div className={`w-8 h-8 md:w-10 md:h-10 flex-shrink-0 flex items-center justify-center ${textColors[index]}`}>
                       <Shape className="w-full h-full" />
                     </div>
-                    <div className="text-white text-2xl md:text-4xl font-bold flex-1 break-words leading-tight">{opt}</div>
+                    <div className="text-xl md:text-2xl font-bold flex-1 break-words leading-tight">{opt}</div>
                     
                     {isCorrect && (
                       <motion.div 
                         initial={{ scale: 0 }}
                         animate={{ scale: 1 }}
                         transition={{ type: "spring", bounce: 0.6 }}
-                        className="absolute top-4 right-4 bg-white p-2 rounded-full shadow-lg"
+                        className="absolute top-1/2 -translate-y-1/2 right-6"
                       >
-                        <Check size={32} className="text-green-500" />
+                        <Check size={32} className="text-green-400" />
                       </motion.div>
                     )}
                     
                     {showResult && resultData && (
                       <motion.div 
-                        initial={{ opacity: 0, y: 20 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        className="absolute bottom-4 right-4 bg-black/40 px-4 py-2 rounded-full text-white font-black text-2xl md:text-3xl shadow-inner"
+                        initial={{ opacity: 0, scale: 0.8 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        className="absolute bottom-2 right-4 text-gray-400 font-bold text-lg"
                       >
-                        {resultData.answerCounts[index]}
+                        {resultData.answerCounts[index]} yanıt
                       </motion.div>
                     )}
                   </div>
@@ -356,6 +374,21 @@ export default function HostGame() {
             </div>
           </div>
         )}
+      </div>
+
+      {/* Bottom Bar */}
+      <div className="p-6 flex justify-between items-center">
+        <div className="text-gray-400 font-medium">
+          {step === "question" && !showResult && (
+            <span>{answersCount} Yanıt</span>
+          )}
+        </div>
+        <button
+          onClick={handleNext}
+          className="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-gray-200 flex items-center gap-2 transition-colors"
+        >
+          {showResult ? "Sonraki" : "Geç"} <ArrowRight size={20} />
+        </button>
       </div>
     </div>
   );
