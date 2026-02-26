@@ -1,7 +1,8 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles, Download, Upload, GripVertical } from "lucide-react";
+import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
 import { SHAPES } from "../components/Shapes";
 
@@ -108,42 +109,97 @@ export default function HostCreate() {
     setShowLoadModal(false);
   };
 
+  const handleDownloadSet = () => {
+    const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(questions, null, 2));
+    const downloadAnchorNode = document.createElement('a');
+    downloadAnchorNode.setAttribute("href", dataStr);
+    downloadAnchorNode.setAttribute("download", "soru-seti.json");
+    document.body.appendChild(downloadAnchorNode);
+    downloadAnchorNode.click();
+    downloadAnchorNode.remove();
+  };
+
+  const handleUploadSet = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (e) => {
+      try {
+        const content = e.target?.result as string;
+        const parsed = JSON.parse(content);
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed[0].id && parsed[0].title !== undefined) {
+          setQuestions(parsed);
+          setActiveQuestionId(parsed[0].id);
+        } else {
+          alert("Geçersiz dosya formatı.");
+        }
+      } catch (err) {
+        alert("Dosya okunamadı.");
+      }
+    };
+    reader.readAsText(file);
+    event.target.value = '';
+  };
+
+  const handleDragEnd = (result: any) => {
+    if (!result.destination) return;
+
+    const items = Array.from(questions);
+    const [reorderedItem] = items.splice(result.source.index, 1);
+    items.splice(result.destination.index, 0, reorderedItem);
+
+    setQuestions(items);
+  };
+
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-blue-500/30">
-      <header className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-black/20 backdrop-blur-md z-20 relative">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-[var(--text-primary)] selection:bg-purple-500/30">
+      <header className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-[var(--border-color)] bg-[var(--color-quiz-bg)]/80 backdrop-blur-md z-20 relative">
         <div className="flex items-center gap-3">
           <button 
             onClick={() => setSidebarOpen(!sidebarOpen)}
-            className="md:hidden p-2 text-gray-400 hover:text-white hover:bg-white/5 rounded-lg transition-colors"
+            className="md:hidden p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] rounded-lg transition-colors"
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-blue-600/20 flex items-center justify-center border border-blue-500/30 hidden sm:flex">
-            <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-purple-600/20 flex items-center justify-center border border-purple-500/30 hidden sm:flex">
+            <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-purple-500 dark:text-purple-400" />
           </div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Oyun Kur</h1>
+          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Yarışma Oluştur</h1>
         </div>
         <div className="flex items-center gap-2 md:gap-4">
+          <label className="bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-[var(--input-focus)] hover:text-[var(--text-primary)] flex items-center gap-2 text-sm md:text-base transition-colors cursor-pointer">
+            <Upload size={20} />
+            <span className="hidden sm:inline">İçe Aktar</span>
+            <input type="file" accept=".json" onChange={handleUploadSet} className="hidden" />
+          </label>
+          <button
+            onClick={handleDownloadSet}
+            className="bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-[var(--input-focus)] hover:text-[var(--text-primary)] flex items-center gap-2 text-sm md:text-base transition-colors"
+          >
+            <Download size={20} />
+            <span className="hidden sm:inline">Dışa Aktar</span>
+          </button>
           <button
             onClick={() => setShowLoadModal(true)}
-            className="bg-white/5 border border-white/10 text-gray-300 px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white flex items-center gap-2 text-sm md:text-base transition-colors"
+            className="bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-[var(--input-focus)] hover:text-[var(--text-primary)] flex items-center gap-2 text-sm md:text-base transition-colors"
           >
             <FolderOpen size={20} />
             <span className="hidden sm:inline">Yükle</span>
           </button>
           <button
             onClick={() => setShowSaveModal(true)}
-            className="bg-white/5 border border-white/10 text-gray-300 px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-white/10 hover:text-white flex items-center gap-2 text-sm md:text-base transition-colors"
+            className="bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-[var(--input-focus)] hover:text-[var(--text-primary)] flex items-center gap-2 text-sm md:text-base transition-colors"
           >
             <Save size={20} />
             <span className="hidden sm:inline">Kaydet</span>
           </button>
           <button
             onClick={handleCreateLobby}
-            className="bg-blue-500 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex items-center gap-2 text-sm md:text-base shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all"
+            className="bg-purple-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-purple-700 flex items-center gap-2 text-sm md:text-base shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all"
           >
             <Play size={20} />
-            <span className="hidden sm:inline">Lobi Oluştur</span>
+            <span className="hidden sm:inline">Odayı Kur</span>
           </button>
         </div>
       </header>
@@ -151,43 +207,62 @@ export default function HostCreate() {
       <div className="flex-1 flex overflow-hidden relative">
         {/* Sidebar */}
         <div className={`
-          absolute md:relative z-10 w-64 h-full bg-[var(--color-quiz-card)] border-r border-white/5 overflow-y-auto p-4 flex flex-col gap-4
+          absolute md:relative z-10 w-64 h-full bg-[var(--color-quiz-card)] border-r border-[var(--border-color)] overflow-y-auto p-4 flex flex-col gap-4
           transition-transform duration-300 ease-in-out
           ${sidebarOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"}
         `}>
-          {questions.map((q, index) => (
-            <div
-              key={q.id}
-              onClick={() => {
-                setActiveQuestionId(q.id);
-                setSidebarOpen(false);
-              }}
-              className={`p-4 rounded-xl border cursor-pointer relative group transition-colors ${
-                activeQuestionId === q.id
-                  ? "border-blue-500 bg-blue-500/10"
-                  : "border-white/10 hover:border-white/20 bg-white/5"
-              }`}
-            >
-              <div className="font-bold text-gray-400 mb-2 text-sm">Soru {index + 1}</div>
-              <div className="text-sm truncate text-gray-200">
-                {q.title || "Boş soru"}
-              </div>
-              {questions.length > 1 && (
-                <button
-                  onClick={(e) => {
-                    e.stopPropagation();
-                    handleDeleteQuestion(q.id);
-                  }}
-                  className="absolute top-2 right-2 p-1 text-gray-500 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <Trash2 size={16} />
-                </button>
+          <DragDropContext onDragEnd={handleDragEnd}>
+            <Droppable droppableId="questions">
+              {(provided) => (
+                <div {...provided.droppableProps} ref={provided.innerRef} className="flex flex-col gap-4">
+                  {questions.map((q, index) => (
+                    <Draggable key={q.id} draggableId={q.id} index={index}>
+                      {(provided) => (
+                        <div
+                          ref={provided.innerRef}
+                          {...provided.draggableProps}
+                          onClick={() => {
+                            setActiveQuestionId(q.id);
+                            setSidebarOpen(false);
+                          }}
+                          className={`p-4 rounded-xl border cursor-pointer relative group transition-colors ${
+                            activeQuestionId === q.id
+                              ? "border-purple-500 bg-purple-500/10"
+                              : "border-[var(--border-color)] hover:border-purple-500/50 bg-[var(--input-bg)]"
+                          }`}
+                        >
+                          <div className="flex items-center gap-2 mb-2">
+                            <div {...provided.dragHandleProps} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing">
+                              <GripVertical size={16} />
+                            </div>
+                            <div className="font-bold text-[var(--text-secondary)] text-sm">Soru {index + 1}</div>
+                          </div>
+                          <div className="text-sm truncate text-[var(--text-primary)] pl-6">
+                            {q.title || "Boş soru"}
+                          </div>
+                          {questions.length > 1 && (
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                handleDeleteQuestion(q.id);
+                              }}
+                              className="absolute top-2 right-2 p-1 text-[var(--text-secondary)] hover:text-red-500 dark:hover:text-red-400 opacity-0 group-hover:opacity-100 transition-opacity"
+                            >
+                              <Trash2 size={16} />
+                            </button>
+                          )}
+                        </div>
+                      )}
+                    </Draggable>
+                  ))}
+                  {provided.placeholder}
+                </div>
               )}
-            </div>
-          ))}
+            </Droppable>
+          </DragDropContext>
           <button
             onClick={handleAddQuestion}
-            className="p-4 rounded-xl border-2 border-dashed border-white/20 text-gray-400 font-bold hover:border-blue-500 hover:text-blue-400 flex items-center justify-center gap-2 transition-colors"
+            className="p-4 rounded-xl border-2 border-dashed border-[var(--border-color)] text-[var(--text-secondary)] font-bold hover:border-purple-500 hover:text-purple-500 dark:hover:text-purple-400 flex items-center justify-center gap-2 transition-colors"
           >
             <Plus size={20} /> Soru Ekle
           </button>
@@ -209,11 +284,11 @@ export default function HostCreate() {
               placeholder="Sorunuzu yazmaya başlayın"
               value={activeQuestion.title}
               onChange={(e) => updateActiveQuestion({ title: e.target.value })}
-              className="w-full text-center text-2xl md:text-4xl font-bold p-4 md:p-6 bg-[var(--color-quiz-card)] text-white placeholder-gray-500 rounded-2xl shadow-sm border border-white/10 focus:border-blue-500 outline-none transition-colors"
+              className="w-full text-center text-2xl md:text-4xl font-bold p-4 md:p-6 bg-[var(--color-quiz-card)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] rounded-2xl shadow-sm border border-[var(--border-color)] focus:border-purple-500 outline-none transition-colors"
             />
 
             <div className="flex flex-col md:flex-row justify-center gap-4">
-              <div className="w-full md:w-96 h-48 md:h-64 bg-[var(--color-quiz-card)] rounded-2xl shadow-sm border-2 border-dashed border-white/20 flex flex-col items-center justify-center text-gray-400 p-4 relative overflow-hidden transition-colors hover:border-white/30">
+              <div className="w-full md:w-96 h-48 md:h-64 bg-[var(--color-quiz-card)] rounded-2xl shadow-sm border-2 border-dashed border-[var(--border-color)] flex flex-col items-center justify-center text-[var(--text-secondary)] p-4 relative overflow-hidden transition-colors hover:border-purple-500/50">
                 {activeQuestion.image ? (
                   <>
                     <img
@@ -230,11 +305,11 @@ export default function HostCreate() {
                   </>
                 ) : (
                   <>
-                    <ImageIcon size={48} className="mb-4 text-gray-500" />
+                    <ImageIcon size={48} className="mb-4 text-[var(--text-secondary)]" />
                     <input
                       type="text"
                       placeholder="Görsel URL (isteğe bağlı)"
-                      className="w-full text-center p-2 bg-white/5 border border-white/10 rounded-lg outline-none focus:border-blue-500 text-sm md:text-base text-white placeholder-gray-500 transition-colors"
+                      className="w-full text-center p-2 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-lg outline-none focus:border-purple-500 text-sm md:text-base text-[var(--text-primary)] placeholder-[var(--text-secondary)] transition-colors"
                       value={activeQuestion.image || ""}
                       onChange={(e) => updateActiveQuestion({ image: e.target.value })}
                     />
@@ -243,8 +318,8 @@ export default function HostCreate() {
               </div>
               
               <div className="flex flex-col gap-4 w-full md:w-auto">
-                <div className="bg-[var(--color-quiz-card)] p-4 rounded-2xl shadow-sm border border-white/10">
-                  <label className="block text-sm font-bold text-gray-400 mb-2">
+                <div className="bg-[var(--color-quiz-card)] p-4 rounded-2xl shadow-sm border border-[var(--border-color)]">
+                  <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">
                     Süre sınırı
                   </label>
                   <select
@@ -252,12 +327,12 @@ export default function HostCreate() {
                     onChange={(e) =>
                       updateActiveQuestion({ timeLimit: Number(e.target.value) })
                     }
-                    className="w-full p-2 bg-white/5 border border-white/10 text-white rounded-lg outline-none focus:border-blue-500 font-medium transition-colors"
+                    className="w-full p-2 bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-primary)] rounded-lg outline-none focus:border-purple-500 font-medium transition-colors"
                   >
-                    <option value={10} className="bg-gray-900">10 saniye</option>
-                    <option value={20} className="bg-gray-900">20 saniye</option>
-                    <option value={30} className="bg-gray-900">30 saniye</option>
-                    <option value={60} className="bg-gray-900">1 dakika</option>
+                    <option value={10} className="bg-[var(--color-quiz-card)]">10 saniye</option>
+                    <option value={20} className="bg-[var(--color-quiz-card)]">20 saniye</option>
+                    <option value={30} className="bg-[var(--color-quiz-card)]">30 saniye</option>
+                    <option value={60} className="bg-[var(--color-quiz-card)]">1 dakika</option>
                   </select>
                 </div>
               </div>
@@ -315,25 +390,25 @@ export default function HostCreate() {
 
       {showSaveModal && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--color-quiz-card)] border border-white/10 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl">
-            <h2 className="text-2xl font-bold mb-6 text-white">Soru Setini Kaydet</h2>
+          <div className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl">
+            <h2 className="text-2xl font-bold mb-6 text-[var(--text-primary)]">Soruları Kaydet</h2>
             <input
               type="text"
-              placeholder="Kurucu Takma Adınız"
+              placeholder="Sunucu Adı"
               value={hostNickname}
               onChange={e => setHostNickname(e.target.value)}
-              className="w-full p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl mb-4 outline-none focus:border-blue-500 transition-colors"
+              className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] rounded-xl mb-4 outline-none focus:border-purple-500 transition-colors"
             />
             <input
               type="text"
-              placeholder="Set Başlığı (örn. Tarih Testi)"
+              placeholder="Yarışma Başlığı (örn. Genel Kültür)"
               value={setTitle}
               onChange={e => setSetTitle(e.target.value)}
-              className="w-full p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl mb-8 outline-none focus:border-blue-500 transition-colors"
+              className="w-full p-3 bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] rounded-xl mb-8 outline-none focus:border-purple-500 transition-colors"
             />
             <div className="flex justify-end gap-3">
-              <button onClick={() => setShowSaveModal(false)} className="px-5 py-2.5 font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors">İptal</button>
-              <button onClick={handleSaveSet} className="px-5 py-2.5 font-bold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)]">Kaydet</button>
+              <button onClick={() => setShowSaveModal(false)} className="px-5 py-2.5 font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] rounded-xl transition-colors">İptal</button>
+              <button onClick={handleSaveSet} className="px-5 py-2.5 font-bold bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-[0_0_15px_rgba(168,85,247,0.3)]">Kaydet</button>
             </div>
           </div>
         </div>
@@ -341,29 +416,29 @@ export default function HostCreate() {
 
       {showLoadModal && (
         <div className="absolute inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-          <div className="bg-[var(--color-quiz-card)] border border-white/10 rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl max-h-[80vh] flex flex-col">
-            <h2 className="text-2xl font-bold mb-6 text-white">Soru Seti Yükle</h2>
+          <div className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl max-h-[80vh] flex flex-col">
+            <h2 className="text-2xl font-bold mb-6 text-[var(--text-primary)]">Soruları Yükle</h2>
             <div className="flex gap-3 mb-6">
               <input
                 type="text"
-                placeholder="Kurucu Takma Adınız"
+                placeholder="Sunucu Adı"
                 value={hostNickname}
                 onChange={e => setHostNickname(e.target.value)}
-                className="flex-1 p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl outline-none focus:border-blue-500 transition-colors"
+                className="flex-1 p-3 bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-primary)] placeholder-[var(--text-secondary)] rounded-xl outline-none focus:border-purple-500 transition-colors"
               />
-              <button onClick={handleLoadSets} className="px-5 py-2.5 font-bold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)]">Bul</button>
+              <button onClick={handleLoadSets} className="px-5 py-2.5 font-bold bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors shadow-[0_0_15px_rgba(168,85,247,0.3)]">Bul</button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
               {savedSets.map(set => (
-                <div key={set.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center hover:bg-white/10 transition-colors">
-                  <span className="font-bold text-gray-200">{set.title}</span>
-                  <button onClick={() => loadSpecificSet(set.questions)} className="text-blue-400 font-bold hover:text-blue-300 transition-colors">Yükle</button>
+                <div key={set.id} className="p-4 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl flex justify-between items-center hover:bg-[var(--input-focus)] transition-colors">
+                  <span className="font-bold text-[var(--text-primary)]">{set.title}</span>
+                  <button onClick={() => loadSpecificSet(set.questions)} className="text-purple-600 dark:text-purple-400 font-bold hover:text-purple-500 dark:hover:text-purple-300 transition-colors">Yükle</button>
                 </div>
               ))}
-              {savedSets.length === 0 && <p className="text-gray-500 text-center py-8 font-medium">Set bulunamadı.</p>}
+              {savedSets.length === 0 && <p className="text-[var(--text-secondary)] text-center py-8 font-medium">Kayıtlı soru bulunamadı.</p>}
             </div>
-            <div className="flex justify-end mt-6 pt-4 border-t border-white/10">
-              <button onClick={() => setShowLoadModal(false)} className="px-5 py-2.5 font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors">Kapat</button>
+            <div className="flex justify-end mt-6 pt-4 border-t border-[var(--border-color)]">
+              <button onClick={() => setShowLoadModal(false)} className="px-5 py-2.5 font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] rounded-xl transition-colors">Kapat</button>
             </div>
           </div>
         </div>

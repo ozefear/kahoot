@@ -34,7 +34,7 @@ export default function PlayerLobby() {
     });
 
     socket.on("host_disconnected", () => {
-      alert("Kurucu oyundan ayrıldı.");
+      alert("Sunucu ayrıldı.");
       navigate("/");
     });
 
@@ -45,11 +45,11 @@ export default function PlayerLobby() {
   }, [name, navigate, pin]);
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white text-center selection:bg-blue-500/30">
-      <div className="text-3xl md:text-4xl font-bold mb-6 md:mb-8 tracking-tight text-gray-300">İçeridesin!</div>
-      <div className="text-5xl md:text-6xl font-black mb-8 md:mb-12 text-blue-400 break-words max-w-full px-4 drop-shadow-[0_0_15px_rgba(59,130,246,0.5)]">{name}</div>
-      <div className="text-xl md:text-2xl font-bold text-gray-400 animate-pulse">
-        Ekranda takma adını gör
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-[var(--text-primary)] text-center selection:bg-purple-500/30">
+      <div className="text-3xl md:text-4xl font-bold mb-6 md:mb-8 tracking-tight text-[var(--text-secondary)]">Katıldın!</div>
+      <div className="text-5xl md:text-6xl font-black mb-8 md:mb-12 text-purple-600 dark:text-purple-400 break-words max-w-full px-4 drop-shadow-[0_0_15px_rgba(168,85,247,0.5)]">{name}</div>
+      <div className="text-xl md:text-2xl font-bold text-[var(--text-secondary)] animate-pulse">
+        Ekranda adını gör
       </div>
     </div>
   );

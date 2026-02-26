@@ -72,12 +72,12 @@ export default function HostLobby() {
   const pinDigits = pin ? pin.split("") : [];
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-[var(--text-primary)] selection:bg-purple-500/30">
       {/* Header */}
-      <header className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-black/20 backdrop-blur-md">
+      <header className="flex items-center justify-between px-8 py-6 border-b border-[var(--border-color)] bg-[var(--color-quiz-bg)]/80 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center border border-blue-500/30">
-            <Sparkles className="w-6 h-6 text-blue-400" />
+          <div className="w-10 h-10 rounded-xl bg-purple-600/20 flex items-center justify-center border border-purple-500/30">
+            <Sparkles className="w-6 h-6 text-purple-500 dark:text-purple-400" />
           </div>
           <span className="text-2xl font-bold tracking-tight">ACM Hacettepe</span>
         </div>
@@ -85,18 +85,18 @@ export default function HostLobby() {
         <div className="flex items-center gap-6">
           <button 
             onClick={() => setAudioEnabled(!audioEnabled)}
-            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium"
+            className="flex items-center gap-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors font-medium"
           >
-            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} className="text-red-400" />}
+            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} className="text-red-500 dark:text-red-400" />}
             Sesi {audioEnabled ? "Kapat" : "Aç"}
           </button>
-          <div className="w-px h-8 bg-white/10 mx-2"></div>
+          <div className="w-px h-8 bg-[var(--border-color)] mx-2"></div>
           <button
             onClick={handleStartGame}
             disabled={players.length === 0}
-            className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-2.5 rounded-full font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]"
+            className="bg-purple-600 hover:bg-purple-700 text-white px-8 py-2.5 rounded-full font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)]"
           >
-            Oyunu Başlat
+            Yarışmayı Başlat
           </button>
         </div>
       </header>
@@ -110,17 +110,17 @@ export default function HostLobby() {
             className="text-center"
           >
             <h1 className="text-4xl md:text-5xl font-bold mb-3">
-              <span className="text-white">Şuradan katılın: </span>
-              <span className="text-blue-400">{window.location.host}</span>
+              <span className="text-[var(--text-primary)]">Şuradan katılın: </span>
+              <span className="text-purple-600 dark:text-purple-400">{window.location.host}</span>
             </h1>
-            <p className="text-gray-400 font-bold tracking-[0.2em] text-sm uppercase mb-6">
+            <p className="text-[var(--text-secondary)] font-bold tracking-[0.2em] text-sm uppercase mb-6">
               6 Haneli PIN'i Girin
             </p>
             <button
               onClick={handleCopy}
-              className="flex items-center gap-2 mx-auto bg-white/10 hover:bg-white/20 px-6 py-3 rounded-full transition-colors font-bold"
+              className="flex items-center gap-2 mx-auto bg-[var(--input-bg)] hover:bg-[var(--input-focus)] px-6 py-3 rounded-full transition-colors font-bold border border-[var(--border-color)]"
             >
-              {copied ? <Check size={20} className="text-green-400" /> : <Copy size={20} />}
+              {copied ? <Check size={20} className="text-green-500 dark:text-green-400" /> : <Copy size={20} />}
               {copied ? "Kopyalandı!" : "Bağlantıyı Kopyala"}
             </button>
           </motion.div>
@@ -128,14 +128,14 @@ export default function HostLobby() {
           <motion.div
             initial={{ scale: 0.8, opacity: 0 }}
             animate={{ scale: 1, opacity: 1 }}
-            className="bg-white p-4 rounded-2xl shadow-2xl"
+            className="bg-white p-4 rounded-2xl shadow-2xl border border-[var(--border-color)]"
           >
             <QRCodeSVG value={joinUrl} size={160} />
           </motion.div>
         </div>
 
         {/* PIN Display */}
-        <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 mb-16 shadow-2xl backdrop-blur-sm">
+        <div className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] rounded-3xl p-8 md:p-12 mb-16 shadow-2xl">
           <div className="flex gap-3 md:gap-6 justify-center">
             {pinDigits.map((digit, index) => (
               <motion.div
@@ -143,7 +143,7 @@ export default function HostLobby() {
                 initial={{ scale: 0.5, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ delay: index * 0.1, type: "spring" }}
-                className="w-16 h-24 md:w-24 md:h-32 bg-[var(--color-quiz-card)] rounded-2xl flex items-center justify-center text-5xl md:text-7xl font-black shadow-inner border border-white/5"
+                className="w-16 h-24 md:w-24 md:h-32 bg-[var(--input-bg)] rounded-2xl flex items-center justify-center text-5xl md:text-7xl font-black shadow-inner border border-[var(--border-color)] text-[var(--text-primary)]"
               >
                 {digit}
               </motion.div>
@@ -152,9 +152,9 @@ export default function HostLobby() {
         </div>
 
         {/* Players Count */}
-        <div className="flex items-center gap-3 bg-blue-900/30 border border-blue-500/30 px-6 py-2.5 rounded-full mb-12">
-          <Users size={20} className="text-blue-400" />
-          <span className="font-bold text-blue-200 tracking-wider text-sm">
+        <div className="flex items-center gap-3 bg-purple-500/10 border border-purple-500/30 px-6 py-2.5 rounded-full mb-12">
+          <Users size={20} className="text-purple-600 dark:text-purple-400" />
+          <span className="font-bold text-purple-700 dark:text-purple-300 tracking-wider text-sm">
             {players.length} OYUNCU KATILDI
           </span>
         </div>
@@ -170,14 +170,14 @@ export default function HostLobby() {
                 animate={{ scale: 1, opacity: 1 }}
                 exit={{ scale: 0.8, opacity: 0 }}
                 transition={{ type: "spring", bounce: 0.3 }}
-                className="bg-[var(--color-quiz-card)] border border-white/10 text-gray-200 font-semibold py-3 px-8 rounded-full shadow-sm hover:bg-white/5 transition-colors"
+                className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] text-[var(--text-primary)] font-semibold py-3 px-8 rounded-full shadow-sm hover:bg-[var(--input-bg)] transition-colors"
               >
                 {player.name}
               </motion.div>
             ))}
           </AnimatePresence>
           {players.length === 0 && (
-            <div className="text-gray-500 font-medium italic py-8">
+            <div className="text-[var(--text-secondary)] font-medium italic py-8">
               Oyuncuların katılması bekleniyor...
             </div>
           )}

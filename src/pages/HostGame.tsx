@@ -191,15 +191,15 @@ export default function HostGame() {
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white selection:bg-blue-500/30">
+      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-[var(--text-primary)] selection:bg-purple-500/30">
         <Trophy size={80} className="text-yellow-400 mb-8 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-        <h1 className="text-4xl md:text-6xl font-black mb-12">Kürsü</h1>
+        <h1 className="text-4xl md:text-6xl font-black mb-12">Sıralama</h1>
         <div className="flex items-end gap-4 md:gap-8 h-64 md:h-96">
           {finalLeaderboard[1] && (
             <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.5, type: "spring" }} className="flex flex-col items-center">
               <div className="text-xl md:text-2xl font-bold mb-4 truncate w-24 md:w-32 text-center">{finalLeaderboard[1].name}</div>
-              <div className="w-24 md:w-32 h-32 md:h-48 bg-white/10 border border-white/20 rounded-t-3xl flex items-center justify-center text-4xl font-black text-gray-300">2</div>
-              <div className="mt-4 font-bold text-lg md:text-xl text-gray-400">{finalLeaderboard[1].score} puan</div>
+              <div className="w-24 md:w-32 h-32 md:h-48 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-t-3xl flex items-center justify-center text-4xl font-black text-[var(--text-secondary)]">2</div>
+              <div className="mt-4 font-bold text-lg md:text-xl text-[var(--text-secondary)]">{finalLeaderboard[1].score} puan</div>
             </motion.div>
           )}
           {finalLeaderboard[0] && (
@@ -219,7 +219,7 @@ export default function HostGame() {
         </div>
         <button
           onClick={() => navigate("/")}
-          className="mt-16 bg-blue-500 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-blue-600 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)]"
+          className="mt-16 bg-purple-600 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-purple-700 transition-colors shadow-[0_0_20px_rgba(168,85,247,0.3)]"
         >
           Ana Sayfaya Dön
         </button>
@@ -229,7 +229,7 @@ export default function HostGame() {
 
   if (!question) {
     return (
-      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex items-center justify-center text-white text-4xl font-bold">
+      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex items-center justify-center text-[var(--text-primary)] text-4xl font-bold">
         Yükleniyor...
       </div>
     );
@@ -240,27 +240,27 @@ export default function HostGame() {
   const textColors = ["text-red-500", "text-blue-500", "text-yellow-500", "text-green-500"];
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-blue-500/30">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-[var(--text-primary)] selection:bg-purple-500/30">
       <header className="flex justify-between items-center px-8 py-6">
         <div className="flex flex-col">
-          <span className="text-gray-400 font-bold tracking-[0.2em] text-xs uppercase mb-1">
-            Quiz Oturumu
+          <span className="text-[var(--text-secondary)] font-bold tracking-[0.2em] text-xs uppercase mb-1">
+            Yarışma
           </span>
           <span className="text-xl font-bold">
-            PIN: <span className="text-blue-400">{pin}</span>
+            PIN: <span className="text-purple-600 dark:text-purple-400">{pin}</span>
           </span>
         </div>
         
         <div className="flex items-center gap-6">
-          <button onClick={toggleAudio} className="text-gray-400 hover:text-white transition-colors">
-            {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} className="text-red-400" />}
+          <button onClick={toggleAudio} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
+            {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} className="text-red-500" />}
           </button>
           <div className="flex flex-col items-end">
-            <span className="text-gray-400 font-bold tracking-[0.2em] text-xs uppercase mb-1">
+            <span className="text-[var(--text-secondary)] font-bold tracking-[0.2em] text-xs uppercase mb-1">
               Soru
             </span>
             <span className="text-xl font-bold">
-              {questionIndex + 1} <span className="text-gray-500">/ {totalQuestions}</span>
+              {questionIndex + 1} <span className="text-[var(--text-secondary)]">/ {totalQuestions}</span>
             </span>
           </div>
         </div>
@@ -275,10 +275,10 @@ export default function HostGame() {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", bounce: 0.5 }}
-                className="absolute top-10 flex items-center gap-3 bg-blue-900/30 text-blue-200 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-blue-500/30"
+                className="absolute top-10 flex items-center gap-3 bg-purple-500/10 text-purple-700 dark:text-purple-300 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-purple-500/30"
               >
-                <TrendingUp size={24} className="text-blue-400" />
-                <span>{resultData.highestClimber.name} yükselişte! {resultData.highestClimber.change} sıra atladı!</span>
+                <TrendingUp size={24} className="text-purple-600 dark:text-purple-400" />
+                <span>{resultData.highestClimber.name} yükselişte! {resultData.highestClimber.change} sıra yükseldi!</span>
               </motion.div>
             )}
 
@@ -287,10 +287,10 @@ export default function HostGame() {
               {resultData.leaderboard[1] && (
                 <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[200px]">
                   <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center">{resultData.leaderboard[1].name}</div>
-                  <div className="text-gray-400 text-sm mb-4">{resultData.leaderboard[1].score} puan</div>
-                  <div className="w-full h-40 md:h-56 bg-white/5 border border-white/10 rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
+                  <div className="text-[var(--text-secondary)] text-sm mb-4">{resultData.leaderboard[1].score} puan</div>
+                  <div className="w-full h-40 md:h-56 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-gray-400/50"></div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gray-400/50 flex items-center justify-center text-xl font-bold text-gray-300">2</div>
+                    <div className="w-12 h-12 rounded-full border-2 border-gray-400/50 flex items-center justify-center text-xl font-bold text-[var(--text-secondary)]">2</div>
                   </div>
                 </motion.div>
               )}
@@ -301,9 +301,9 @@ export default function HostGame() {
                   <Trophy size={40} className="text-yellow-400 mb-2 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
                   <div className="text-3xl md:text-4xl font-black mb-2 truncate w-full text-center">{resultData.leaderboard[0].name}</div>
                   <div className="text-yellow-400 font-bold mb-4">{resultData.leaderboard[0].score} puan</div>
-                  <div className="w-full h-56 md:h-72 bg-white/10 border border-white/20 rounded-t-3xl flex items-start justify-center pt-8 relative overflow-hidden shadow-[0_-10px_40px_rgba(250,204,21,0.1)]">
+                  <div className="w-full h-56 md:h-72 bg-yellow-400/10 border border-yellow-400/30 rounded-t-3xl flex items-start justify-center pt-8 relative overflow-hidden shadow-[0_-10px_40px_rgba(250,204,21,0.1)]">
                     <div className="absolute top-0 left-0 right-0 h-2 bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.8)]"></div>
-                    <div className="w-16 h-16 rounded-full border-4 border-yellow-400 flex items-center justify-center text-3xl font-black text-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]">1</div>
+                    <div className="w-16 h-16 rounded-full border-4 border-yellow-400 flex items-center justify-center text-3xl font-black text-yellow-500 dark:text-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]">1</div>
                   </div>
                 </motion.div>
               )}
@@ -311,11 +311,11 @@ export default function HostGame() {
               {/* 3rd Place */}
               {resultData.leaderboard[2] && (
                 <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[200px]">
-                  <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center text-orange-300">{resultData.leaderboard[2].name}</div>
-                  <div className="text-gray-400 text-sm mb-4">{resultData.leaderboard[2].score} puan</div>
-                  <div className="w-full h-32 md:h-48 bg-white/5 border border-white/10 rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
+                  <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center text-orange-500 dark:text-orange-300">{resultData.leaderboard[2].name}</div>
+                  <div className="text-[var(--text-secondary)] text-sm mb-4">{resultData.leaderboard[2].score} puan</div>
+                  <div className="w-full h-32 md:h-48 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
                     <div className="absolute top-0 left-0 right-0 h-1 bg-orange-400/50"></div>
-                    <div className="w-12 h-12 rounded-full border-2 border-orange-400/50 flex items-center justify-center text-xl font-bold text-orange-300">3</div>
+                    <div className="w-12 h-12 rounded-full border-2 border-orange-400/50 flex items-center justify-center text-xl font-bold text-orange-500 dark:text-orange-300">3</div>
                   </div>
                 </motion.div>
               )}
@@ -332,7 +332,7 @@ export default function HostGame() {
                 <img src={question.image} alt="Question" className="absolute inset-0 w-full h-full object-cover rounded-3xl opacity-80" />
               )}
               
-              <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-black/50 backdrop-blur-md border-4 border-blue-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(59,130,246,0.5)]">
+              <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-[var(--color-quiz-bg)]/80 backdrop-blur-md border-4 border-purple-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(168,85,247,0.5)]">
                 {timeLeft}
               </div>
             </div>
@@ -353,7 +353,7 @@ export default function HostGame() {
                     <div className={`w-8 h-8 md:w-10 md:h-10 flex-shrink-0 flex items-center justify-center ${textColors[index]}`}>
                       <Shape className="w-full h-full" />
                     </div>
-                    <div className="text-xl md:text-2xl font-bold flex-1 break-words leading-tight">{opt}</div>
+                    <div className="text-xl md:text-2xl font-bold flex-1 break-words leading-tight text-[var(--text-primary)]">{opt}</div>
                     
                     {isCorrect && (
                       <motion.div 
@@ -362,7 +362,7 @@ export default function HostGame() {
                         transition={{ type: "spring", bounce: 0.6 }}
                         className="absolute top-1/2 -translate-y-1/2 right-6"
                       >
-                        <Check size={32} className="text-green-400" />
+                        <Check size={32} className="text-green-500 dark:text-green-400" />
                       </motion.div>
                     )}
                     
@@ -370,7 +370,7 @@ export default function HostGame() {
                       <motion.div 
                         initial={{ opacity: 0, scale: 0.8 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        className="absolute bottom-2 right-4 text-gray-400 font-bold text-lg"
+                        className="absolute bottom-2 right-4 text-[var(--text-secondary)] font-bold text-lg"
                       >
                         {resultData.answerCounts[index]} yanıt
                       </motion.div>
@@ -385,14 +385,14 @@ export default function HostGame() {
 
       {/* Bottom Bar */}
       <div className="p-6 flex justify-between items-center">
-        <div className="text-gray-400 font-medium">
+        <div className="text-[var(--text-secondary)] font-medium">
           {step === "question" && !showResult && (
             <span>{answersCount} Yanıt</span>
           )}
         </div>
         <button
           onClick={handleNext}
-          className="bg-white text-black px-6 py-3 rounded-full font-bold hover:bg-gray-200 flex items-center gap-2 transition-colors"
+          className="bg-[var(--text-primary)] text-[var(--color-quiz-bg)] px-6 py-3 rounded-full font-bold hover:opacity-80 flex items-center gap-2 transition-opacity"
         >
           {showResult ? "Sonraki" : "Geç"} <ArrowRight size={20} />
         </button>
