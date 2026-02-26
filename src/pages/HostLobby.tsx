@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Users, Play, Copy, Check, Volume2, Settings, Sparkles } from "lucide-react";
+import { Users, Play, Copy, Check, Volume2, VolumeX, Sparkles } from "lucide-react";
 import { QRCodeSVG } from "qrcode.react";
 import { motion, AnimatePresence } from "motion/react";
 import lobbyAudio from "../audio/lobby.mp3";
@@ -11,6 +11,14 @@ export default function HostLobby() {
   const navigate = useNavigate();
   const [players, setPlayers] = useState<{ id: string; name: string }[]>([]);
   const [copied, setCopied] = useState(false);
+
+  const [audioEnabled, setAudioEnabled] = useState(false);
+  const [audio] = useState(() => {
+    const a = new Audio(lobbyAudio);
+    a.loop = true;
+    a.volume = 0.5;
+    return a;
+  });
 
   useEffect(() => {
     // Attempt to rejoin if we refreshed
@@ -43,23 +51,15 @@ export default function HostLobby() {
   };
 
   useEffect(() => {
-    const audio = new Audio(lobbyAudio);
-    audio.loop = true;
-    audio.volume = 0.5;
-    
-    // Attempt to play, catch autoplay restrictions
-    const playPromise = audio.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.log("Autoplay prevented. User interaction needed.", error);
-      });
+    if (audioEnabled) {
+      audio.play().catch(e => console.log(e));
+    } else {
+      audio.pause();
     }
-
     return () => {
       audio.pause();
-      audio.currentTime = 0;
     };
-  }, []);
+  }, [audioEnabled, audio]);
 
   const joinUrl = `${window.location.origin}/?pin=${pin}`;
 
@@ -72,30 +72,29 @@ export default function HostLobby() {
   const pinDigits = pin ? pin.split("") : [];
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-violet-500/30">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-blue-500/30">
       {/* Header */}
       <header className="flex items-center justify-between px-8 py-6 border-b border-white/5 bg-black/20 backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30">
-            <Sparkles className="w-6 h-6 text-violet-400" />
+          <div className="w-10 h-10 rounded-xl bg-blue-600/20 flex items-center justify-center border border-blue-500/30">
+            <Sparkles className="w-6 h-6 text-blue-400" />
           </div>
-          <span className="text-2xl font-bold tracking-tight">QuizMaster</span>
+          <span className="text-2xl font-bold tracking-tight">ACM Hacettepe</span>
         </div>
         
         <div className="flex items-center gap-6">
-          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium">
-            <Volume2 size={20} />
-            Müzik
-          </button>
-          <button className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium">
-            <Settings size={20} />
-            Ayarlar
+          <button 
+            onClick={() => setAudioEnabled(!audioEnabled)}
+            className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors font-medium"
+          >
+            {audioEnabled ? <Volume2 size={20} /> : <VolumeX size={20} className="text-red-400" />}
+            Sesi {audioEnabled ? "Kapat" : "Aç"}
           </button>
           <div className="w-px h-8 bg-white/10 mx-2"></div>
           <button
             onClick={handleStartGame}
             disabled={players.length === 0}
-            className="bg-violet-500 hover:bg-violet-600 text-white px-8 py-2.5 rounded-full font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)]"
+            className="bg-blue-500 hover:bg-blue-600 text-white px-8 py-2.5 rounded-full font-bold transition-all disabled:opacity-50 disabled:cursor-not-allowed shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)]"
           >
             Oyunu Başlat
           </button>
@@ -104,21 +103,36 @@ export default function HostLobby() {
 
       {/* Main Content */}
       <main className="flex-1 flex flex-col items-center pt-16 px-4">
-        <motion.div 
-          initial={{ y: 20, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="text-center mb-12"
-        >
-          <h1 className="text-4xl md:text-5xl font-bold mb-3">
-            <span className="text-white">Şuradan katılın: </span>
-            <span className="text-violet-400 cursor-pointer hover:text-violet-300 transition-colors" onClick={handleCopy}>
-              quizmaster.live
-            </span>
-          </h1>
-          <p className="text-gray-400 font-bold tracking-[0.2em] text-sm uppercase">
-            6 Haneli PIN'i Girin
-          </p>
-        </motion.div>
+        <div className="flex flex-col md:flex-row items-center gap-12 mb-12">
+          <motion.div 
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            className="text-center"
+          >
+            <h1 className="text-4xl md:text-5xl font-bold mb-3">
+              <span className="text-white">Şuradan katılın: </span>
+              <span className="text-blue-400">{window.location.host}</span>
+            </h1>
+            <p className="text-gray-400 font-bold tracking-[0.2em] text-sm uppercase mb-6">
+              6 Haneli PIN'i Girin
+            </p>
+            <button
+              onClick={handleCopy}
+              className="flex items-center gap-2 mx-auto bg-white/10 hover:bg-white/20 px-6 py-3 rounded-full transition-colors font-bold"
+            >
+              {copied ? <Check size={20} className="text-green-400" /> : <Copy size={20} />}
+              {copied ? "Kopyalandı!" : "Bağlantıyı Kopyala"}
+            </button>
+          </motion.div>
+
+          <motion.div
+            initial={{ scale: 0.8, opacity: 0 }}
+            animate={{ scale: 1, opacity: 1 }}
+            className="bg-white p-4 rounded-2xl shadow-2xl"
+          >
+            <QRCodeSVG value={joinUrl} size={160} />
+          </motion.div>
+        </div>
 
         {/* PIN Display */}
         <div className="bg-white/5 border border-white/10 rounded-3xl p-8 md:p-12 mb-16 shadow-2xl backdrop-blur-sm">
@@ -138,9 +152,9 @@ export default function HostLobby() {
         </div>
 
         {/* Players Count */}
-        <div className="flex items-center gap-3 bg-violet-900/30 border border-violet-500/30 px-6 py-2.5 rounded-full mb-12">
-          <Users size={20} className="text-violet-400" />
-          <span className="font-bold text-violet-200 tracking-wider text-sm">
+        <div className="flex items-center gap-3 bg-blue-900/30 border border-blue-500/30 px-6 py-2.5 rounded-full mb-12">
+          <Users size={20} className="text-blue-400" />
+          <span className="font-bold text-blue-200 tracking-wider text-sm">
             {players.length} OYUNCU KATILDI
           </span>
         </div>

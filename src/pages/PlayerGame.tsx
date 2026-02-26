@@ -101,24 +101,24 @@ export default function PlayerGame() {
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white selection:bg-violet-500/30">
+      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white selection:bg-blue-500/30">
         <Trophy size={80} className="text-yellow-400 mb-8 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
         <h1 className="text-4xl md:text-6xl font-black mb-4">Oyun Bitti!</h1>
-        <div className="text-2xl md:text-3xl font-bold mb-8 text-violet-300">{name}</div>
+        <div className="text-2xl md:text-3xl font-bold mb-8 text-blue-300">{name}</div>
         <motion.div 
           initial={{ scale: 0.8, opacity: 0 }}
           animate={{ scale: 1, opacity: 1 }}
           className="bg-[var(--color-quiz-card)] border border-white/10 text-white rounded-3xl p-6 md:p-8 text-center shadow-2xl w-full max-w-sm"
         >
           <div className="text-xl md:text-2xl font-bold text-gray-400 uppercase tracking-widest mb-2">Final Skoru</div>
-          <div className="text-5xl md:text-6xl font-black mb-8 text-violet-400">{finalScore}</div>
+          <div className="text-5xl md:text-6xl font-black mb-8 text-blue-400">{finalScore}</div>
           {rank > 0 && rank <= 3 && (
             <div className="text-2xl md:text-3xl font-bold text-green-400">{rank}. oldun!</div>
           )}
         </motion.div>
         <button
           onClick={() => navigate("/")}
-          className="mt-12 bg-violet-500 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-violet-600 transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+          className="mt-12 bg-blue-500 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-blue-600 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)]"
         >
           Tekrar Oyna
         </button>
@@ -179,7 +179,7 @@ export default function PlayerGame() {
   if (answered) {
     return (
       <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white">
-        <div className="w-16 h-16 md:w-24 md:h-24 border-8 border-violet-500 border-t-transparent rounded-full animate-spin mb-8"></div>
+        <div className="w-16 h-16 md:w-24 md:h-24 border-8 border-blue-500 border-t-transparent rounded-full animate-spin mb-8"></div>
         <h1 className="text-2xl md:text-4xl font-black text-center text-gray-200">Diğerleri bekleniyor...</h1>
       </div>
     );

@@ -1,5 +1,5 @@
 {
-  "name": "",
-  "description": "",
+  "name": "ACM Hacettepe Quiz",
+  "description": "A real-time multiplayer quiz game for ACM Hacettepe.",
   "requestFramePermissions": []
 }

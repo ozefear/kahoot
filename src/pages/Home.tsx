@@ -25,16 +25,16 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 selection:bg-violet-500/30">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 selection:bg-blue-500/30">
       <div className="w-full max-w-md bg-[var(--color-quiz-card)] border border-white/10 rounded-3xl shadow-2xl p-8 md:p-10 relative overflow-hidden">
-        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-violet-500 via-fuchsia-500 to-violet-500"></div>
+        <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-blue-500 via-cyan-500 to-blue-500"></div>
         
         <div className="flex flex-col items-center mb-10">
-          <div className="w-16 h-16 rounded-2xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 mb-4 shadow-[0_0_20px_rgba(139,92,246,0.2)]">
-            <Sparkles className="w-8 h-8 text-violet-400" />
+          <div className="w-16 h-16 rounded-2xl bg-blue-600/20 flex items-center justify-center border border-blue-500/30 mb-4 shadow-[0_0_20px_rgba(59,130,246,0.2)]">
+            <Sparkles className="w-8 h-8 text-blue-400" />
           </div>
           <h1 className="text-3xl md:text-4xl font-black text-center text-white tracking-tight">
-            QuizMaster
+            ACM Hacettepe
           </h1>
         </div>
         
@@ -45,7 +45,7 @@ export default function Home() {
               placeholder="Oyun PIN"
               value={pin}
               onChange={(e) => setPin(e.target.value)}
-              className="w-full text-center text-xl md:text-2xl font-bold p-4 bg-white/5 border-2 border-white/10 rounded-2xl focus:border-violet-500 focus:bg-white/10 text-white placeholder-gray-500 transition-all outline-none"
+              className="w-full text-center text-xl md:text-2xl font-bold p-4 bg-white/5 border-2 border-white/10 rounded-2xl focus:border-blue-500 focus:bg-white/10 text-white placeholder-gray-500 transition-all outline-none"
               maxLength={6}
             />
           </div>
@@ -55,7 +55,7 @@ export default function Home() {
               placeholder="Takma Ad"
               value={name}
               onChange={(e) => setName(e.target.value)}
-              className="w-full text-center text-xl md:text-2xl font-bold p-4 bg-white/5 border-2 border-white/10 rounded-2xl focus:border-violet-500 focus:bg-white/10 text-white placeholder-gray-500 transition-all outline-none"
+              className="w-full text-center text-xl md:text-2xl font-bold p-4 bg-white/5 border-2 border-white/10 rounded-2xl focus:border-blue-500 focus:bg-white/10 text-white placeholder-gray-500 transition-all outline-none"
               maxLength={15}
             />
           </div>
@@ -65,7 +65,7 @@ export default function Home() {
           <button
             type="submit"
             disabled={!pin || !name}
-            className="w-full bg-violet-500 text-white font-bold text-xl p-4 rounded-2xl hover:bg-violet-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] mt-4"
+            className="w-full bg-blue-500 text-white font-bold text-xl p-4 rounded-2xl hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] mt-4"
           >
             Oyuna Katıl
           </button>
@@ -75,7 +75,7 @@ export default function Home() {
           <p className="text-gray-400 mb-4 font-medium">Oyun kurmak mı istiyorsun?</p>
           <button
             onClick={() => navigate("/host/create")}
-            className="text-white font-bold hover:text-violet-400 transition-colors flex items-center justify-center gap-2 mx-auto"
+            className="text-white font-bold hover:text-blue-400 transition-colors flex items-center justify-center gap-2 mx-auto"
           >
             Oyun Kur
           </button>

@@ -109,7 +109,7 @@ export default function HostCreate() {
   };
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-violet-500/30">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-blue-500/30">
       <header className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-white/5 bg-black/20 backdrop-blur-md z-20 relative">
         <div className="flex items-center gap-3">
           <button 
@@ -118,8 +118,8 @@ export default function HostCreate() {
           >
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
-          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-violet-600/20 flex items-center justify-center border border-violet-500/30 hidden sm:flex">
-            <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-violet-400" />
+          <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-blue-600/20 flex items-center justify-center border border-blue-500/30 hidden sm:flex">
+            <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-blue-400" />
           </div>
           <h1 className="text-xl md:text-2xl font-bold tracking-tight">Oyun Kur</h1>
         </div>
@@ -140,7 +140,7 @@ export default function HostCreate() {
           </button>
           <button
             onClick={handleCreateLobby}
-            className="bg-violet-500 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-violet-600 flex items-center gap-2 text-sm md:text-base shadow-[0_0_20px_rgba(139,92,246,0.3)] hover:shadow-[0_0_30px_rgba(139,92,246,0.5)] transition-all"
+            className="bg-blue-500 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-blue-600 flex items-center gap-2 text-sm md:text-base shadow-[0_0_20px_rgba(59,130,246,0.3)] hover:shadow-[0_0_30px_rgba(59,130,246,0.5)] transition-all"
           >
             <Play size={20} />
             <span className="hidden sm:inline">Lobi Oluştur</span>
@@ -164,7 +164,7 @@ export default function HostCreate() {
               }}
               className={`p-4 rounded-xl border cursor-pointer relative group transition-colors ${
                 activeQuestionId === q.id
-                  ? "border-violet-500 bg-violet-500/10"
+                  ? "border-blue-500 bg-blue-500/10"
                   : "border-white/10 hover:border-white/20 bg-white/5"
               }`}
             >
@@ -187,7 +187,7 @@ export default function HostCreate() {
           ))}
           <button
             onClick={handleAddQuestion}
-            className="p-4 rounded-xl border-2 border-dashed border-white/20 text-gray-400 font-bold hover:border-violet-500 hover:text-violet-400 flex items-center justify-center gap-2 transition-colors"
+            className="p-4 rounded-xl border-2 border-dashed border-white/20 text-gray-400 font-bold hover:border-blue-500 hover:text-blue-400 flex items-center justify-center gap-2 transition-colors"
           >
             <Plus size={20} /> Soru Ekle
           </button>
@@ -209,7 +209,7 @@ export default function HostCreate() {
               placeholder="Sorunuzu yazmaya başlayın"
               value={activeQuestion.title}
               onChange={(e) => updateActiveQuestion({ title: e.target.value })}
-              className="w-full text-center text-2xl md:text-4xl font-bold p-4 md:p-6 bg-[var(--color-quiz-card)] text-white placeholder-gray-500 rounded-2xl shadow-sm border border-white/10 focus:border-violet-500 outline-none transition-colors"
+              className="w-full text-center text-2xl md:text-4xl font-bold p-4 md:p-6 bg-[var(--color-quiz-card)] text-white placeholder-gray-500 rounded-2xl shadow-sm border border-white/10 focus:border-blue-500 outline-none transition-colors"
             />
 
             <div className="flex flex-col md:flex-row justify-center gap-4">
@@ -234,7 +234,7 @@ export default function HostCreate() {
                     <input
                       type="text"
                       placeholder="Görsel URL (isteğe bağlı)"
-                      className="w-full text-center p-2 bg-white/5 border border-white/10 rounded-lg outline-none focus:border-violet-500 text-sm md:text-base text-white placeholder-gray-500 transition-colors"
+                      className="w-full text-center p-2 bg-white/5 border border-white/10 rounded-lg outline-none focus:border-blue-500 text-sm md:text-base text-white placeholder-gray-500 transition-colors"
                       value={activeQuestion.image || ""}
                       onChange={(e) => updateActiveQuestion({ image: e.target.value })}
                     />
@@ -252,7 +252,7 @@ export default function HostCreate() {
                     onChange={(e) =>
                       updateActiveQuestion({ timeLimit: Number(e.target.value) })
                     }
-                    className="w-full p-2 bg-white/5 border border-white/10 text-white rounded-lg outline-none focus:border-violet-500 font-medium transition-colors"
+                    className="w-full p-2 bg-white/5 border border-white/10 text-white rounded-lg outline-none focus:border-blue-500 font-medium transition-colors"
                   >
                     <option value={10} className="bg-gray-900">10 saniye</option>
                     <option value={20} className="bg-gray-900">20 saniye</option>
@@ -322,18 +322,18 @@ export default function HostCreate() {
               placeholder="Kurucu Takma Adınız"
               value={hostNickname}
               onChange={e => setHostNickname(e.target.value)}
-              className="w-full p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl mb-4 outline-none focus:border-violet-500 transition-colors"
+              className="w-full p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl mb-4 outline-none focus:border-blue-500 transition-colors"
             />
             <input
               type="text"
               placeholder="Set Başlığı (örn. Tarih Testi)"
               value={setTitle}
               onChange={e => setSetTitle(e.target.value)}
-              className="w-full p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl mb-8 outline-none focus:border-violet-500 transition-colors"
+              className="w-full p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl mb-8 outline-none focus:border-blue-500 transition-colors"
             />
             <div className="flex justify-end gap-3">
               <button onClick={() => setShowSaveModal(false)} className="px-5 py-2.5 font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-xl transition-colors">İptal</button>
-              <button onClick={handleSaveSet} className="px-5 py-2.5 font-bold bg-violet-500 text-white rounded-xl hover:bg-violet-600 transition-colors shadow-[0_0_15px_rgba(139,92,246,0.3)]">Kaydet</button>
+              <button onClick={handleSaveSet} className="px-5 py-2.5 font-bold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)]">Kaydet</button>
             </div>
           </div>
         </div>
@@ -349,15 +349,15 @@ export default function HostCreate() {
                 placeholder="Kurucu Takma Adınız"
                 value={hostNickname}
                 onChange={e => setHostNickname(e.target.value)}
-                className="flex-1 p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl outline-none focus:border-violet-500 transition-colors"
+                className="flex-1 p-3 bg-white/5 border border-white/10 text-white placeholder-gray-500 rounded-xl outline-none focus:border-blue-500 transition-colors"
               />
-              <button onClick={handleLoadSets} className="px-5 py-2.5 font-bold bg-violet-500 text-white rounded-xl hover:bg-violet-600 transition-colors shadow-[0_0_15px_rgba(139,92,246,0.3)]">Bul</button>
+              <button onClick={handleLoadSets} className="px-5 py-2.5 font-bold bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-colors shadow-[0_0_15px_rgba(59,130,246,0.3)]">Bul</button>
             </div>
             <div className="flex-1 overflow-y-auto space-y-3 pr-2 custom-scrollbar">
               {savedSets.map(set => (
                 <div key={set.id} className="p-4 bg-white/5 border border-white/10 rounded-xl flex justify-between items-center hover:bg-white/10 transition-colors">
                   <span className="font-bold text-gray-200">{set.title}</span>
-                  <button onClick={() => loadSpecificSet(set.questions)} className="text-violet-400 font-bold hover:text-violet-300 transition-colors">Yükle</button>
+                  <button onClick={() => loadSpecificSet(set.questions)} className="text-blue-400 font-bold hover:text-blue-300 transition-colors">Yükle</button>
                 </div>
               ))}
               {savedSets.length === 0 && <p className="text-gray-500 text-center py-8 font-medium">Set bulunamadı.</p>}

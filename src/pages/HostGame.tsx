@@ -118,7 +118,9 @@ export default function HostGame() {
       
       const audioSrc = QUESTION_AUDIO[data.question.timeLimit] || question20Audio;
       questionAudioRef.current = new Audio(audioSrc);
-      questionAudioRef.current.play().catch(e => console.log("Audio play prevented"));
+      if (audioEnabled && questionAudioRef.current) {
+        questionAudioRef.current.play().catch(e => console.log("Audio play prevented"));
+      }
     });
 
     socket.on("player_answered", () => {
@@ -147,7 +149,7 @@ export default function HostGame() {
       if (questionAudioRef.current) {
         questionAudioRef.current.pause();
       }
-      if (podiumAudioRef.current) {
+      if (audioEnabled && podiumAudioRef.current) {
         podiumAudioRef.current.play().catch(e => console.log("Audio play prevented"));
       }
     });
@@ -175,16 +177,21 @@ export default function HostGame() {
     }
   };
 
-  const enableAudio = () => {
-    setAudioEnabled(true);
-    if (step === "question" && questionAudioRef.current) {
-      questionAudioRef.current.play().catch(e => console.log(e));
-    }
+  const toggleAudio = () => {
+    setAudioEnabled((prev) => {
+      const next = !prev;
+      if (next && step === "question" && questionAudioRef.current) {
+        questionAudioRef.current.play().catch(e => console.log(e));
+      } else if (!next && questionAudioRef.current) {
+        questionAudioRef.current.pause();
+      }
+      return next;
+    });
   };
 
   if (gameOver) {
     return (
-      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white selection:bg-violet-500/30">
+      <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 md:p-8 text-white selection:bg-blue-500/30">
         <Trophy size={80} className="text-yellow-400 mb-8 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
         <h1 className="text-4xl md:text-6xl font-black mb-12">Kürsü</h1>
         <div className="flex items-end gap-4 md:gap-8 h-64 md:h-96">
@@ -212,7 +219,7 @@ export default function HostGame() {
         </div>
         <button
           onClick={() => navigate("/")}
-          className="mt-16 bg-violet-500 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-violet-600 transition-colors shadow-[0_0_20px_rgba(139,92,246,0.3)]"
+          className="mt-16 bg-blue-500 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-blue-600 transition-colors shadow-[0_0_20px_rgba(59,130,246,0.3)]"
         >
           Ana Sayfaya Dön
         </button>
@@ -233,19 +240,19 @@ export default function HostGame() {
   const textColors = ["text-red-500", "text-blue-500", "text-yellow-500", "text-green-500"];
 
   return (
-    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-violet-500/30">
+    <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-white selection:bg-blue-500/30">
       <header className="flex justify-between items-center px-8 py-6">
         <div className="flex flex-col">
           <span className="text-gray-400 font-bold tracking-[0.2em] text-xs uppercase mb-1">
             Quiz Oturumu
           </span>
           <span className="text-xl font-bold">
-            PIN: <span className="text-violet-400">{pin}</span>
+            PIN: <span className="text-blue-400">{pin}</span>
           </span>
         </div>
         
         <div className="flex items-center gap-6">
-          <button onClick={enableAudio} className="text-gray-400 hover:text-white transition-colors">
+          <button onClick={toggleAudio} className="text-gray-400 hover:text-white transition-colors">
             {audioEnabled ? <Volume2 size={24} /> : <VolumeX size={24} className="text-red-400" />}
           </button>
           <div className="flex flex-col items-end">
@@ -268,9 +275,9 @@ export default function HostGame() {
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", bounce: 0.5 }}
-                className="absolute top-10 flex items-center gap-3 bg-violet-900/30 text-violet-200 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-violet-500/30"
+                className="absolute top-10 flex items-center gap-3 bg-blue-900/30 text-blue-200 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-blue-500/30"
               >
-                <TrendingUp size={24} className="text-violet-400" />
+                <TrendingUp size={24} className="text-blue-400" />
                 <span>{resultData.highestClimber.name} yükselişte! {resultData.highestClimber.change} sıra atladı!</span>
               </motion.div>
             )}
@@ -325,7 +332,7 @@ export default function HostGame() {
                 <img src={question.image} alt="Question" className="absolute inset-0 w-full h-full object-cover rounded-3xl opacity-80" />
               )}
               
-              <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-black/50 backdrop-blur-md border-4 border-violet-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(139,92,246,0.5)]">
+              <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-black/50 backdrop-blur-md border-4 border-blue-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(59,130,246,0.5)]">
                 {timeLeft}
               </div>
             </div>
