@@ -315,13 +315,13 @@ export default function HostGame() {
               {question.title}
             </h1>
 
-            <div className="flex-1 relative w-full mb-8 flex flex-col md:flex-row items-center justify-center min-h-0 gap-8">
-              <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-full bg-[var(--color-quiz-bg)]/80 backdrop-blur-md border-4 border-purple-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(168,85,247,0.5)]">
+            <div className="flex-1 relative w-full mb-4 md:mb-8 flex flex-col md:flex-row items-center justify-center min-h-0 gap-4 md:gap-8">
+              <div className="flex-shrink-0 w-20 h-20 md:w-28 md:h-28 rounded-full bg-[var(--color-quiz-bg)]/80 backdrop-blur-md border-4 border-purple-500 flex items-center justify-center text-3xl md:text-5xl font-black shadow-[0_0_30px_rgba(168,85,247,0.5)]">
                 {timeLeft}
               </div>
               {question.image && (
-                <div className="flex-1 h-full w-full relative flex items-center justify-center">
-                  <img src={question.image} alt="Question" className="max-w-full max-h-full object-contain rounded-3xl" />
+                <div className="flex-1 h-full w-full relative flex items-center justify-center min-h-0 min-w-0">
+                  <img src={question.image} alt="Question" className="max-w-full max-h-full object-contain rounded-2xl md:rounded-3xl" />
                 </div>
               )}
             </div>
