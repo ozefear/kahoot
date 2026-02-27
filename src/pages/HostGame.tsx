@@ -4,18 +4,17 @@ import { socket } from "../socket";
 import { Check, Trophy, ArrowRight, TrendingUp, Volume2, VolumeX } from "lucide-react";
 import { SHAPES } from "../components/Shapes";
 import { motion } from "motion/react";
-import question10Audio from "../audio/question10.mp3";
-import question20Audio from "../audio/question20.mp3";
-import question30Audio from "../audio/question30.mp3";
-import question60Audio from "../audio/question60.mp3";
-import podiumAudio from "../audio/podium.mp3";
 
+// Eski import satırlarını tamamen sildik.
+// Sesi doğrudan public/audio klasöründen alıyoruz.
 const QUESTION_AUDIO: Record<number, string> = {
-  10: question10Audio,
-  20: question20Audio,
-  30: question30Audio,
-  60: question60Audio,
+  10: "/audio/question10.mp3",
+  20: "/audio/question20.mp3",
+  30: "/audio/question30.mp3",
+  60: "/audio/question60.mp3",
 };
+
+const PODIUM_AUDIO = "/audio/podium.mp3";
 
 type Question = {
   title: string;
@@ -62,8 +61,8 @@ export default function HostGame() {
   const currentQuestionTimeLimit = useRef<number>(20);
 
   useEffect(() => {
-    // Initialize audio objects
-    podiumAudioRef.current = new Audio(podiumAudio);
+    // Initialize audio objects directly with the static path
+    podiumAudioRef.current = new Audio(PODIUM_AUDIO);
 
     return () => {
       // Cleanup audio on unmount
@@ -116,7 +115,8 @@ export default function HostGame() {
         questionAudioRef.current.currentTime = 0;
       }
       
-      const audioSrc = QUESTION_AUDIO[data.question.timeLimit] || question20Audio;
+      // Select the right audio or default to 20s
+      const audioSrc = QUESTION_AUDIO[data.question.timeLimit] || QUESTION_AUDIO[20];
       questionAudioRef.current = new Audio(audioSrc);
       if (audioEnabled && questionAudioRef.current) {
         questionAudioRef.current.play().catch(e => console.log("Audio play prevented"));
@@ -160,7 +160,7 @@ export default function HostGame() {
       socket.off("question_result");
       socket.off("game_over");
     };
-  }, []);
+  }, [audioEnabled, pin]);
 
   useEffect(() => {
     if (timeLeft > 0 && !showResult) {
