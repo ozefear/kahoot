@@ -268,57 +268,45 @@ export default function HostGame() {
 
       <div className="flex-1 flex flex-col items-center justify-center p-4 md:p-6 w-full h-[calc(100vh-100px)] overflow-hidden relative">
         {step === "leaderboard" && resultData ? (
-          <div className="w-full max-w-5xl flex flex-col items-center h-full justify-end pb-12">
+          <div className="w-full max-w-4xl flex flex-col items-center h-full justify-center pb-12">
             
             {resultData.highestClimber && (
               <motion.div 
                 initial={{ scale: 0.8, opacity: 0 }}
                 animate={{ scale: 1, opacity: 1 }}
                 transition={{ type: "spring", bounce: 0.5 }}
-                className="absolute top-10 flex items-center gap-3 bg-purple-500/10 text-purple-700 dark:text-purple-300 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-purple-500/30"
+                className="mb-8 flex items-center gap-3 bg-purple-500/10 text-purple-700 dark:text-purple-300 px-6 py-3 rounded-full font-bold text-lg shadow-sm border border-purple-500/30"
               >
                 <TrendingUp size={24} className="text-purple-600 dark:text-purple-400" />
                 <span>{resultData.highestClimber.name} yükselişte! {resultData.highestClimber.change} sıra yükseldi!</span>
               </motion.div>
             )}
 
-            <div className="flex items-end justify-center gap-4 md:gap-8 h-64 md:h-96 w-full mt-20">
-              {/* 2nd Place */}
-              {resultData.leaderboard[1] && (
-                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.2, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[200px]">
-                  <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center">{resultData.leaderboard[1].name}</div>
-                  <div className="text-[var(--text-secondary)] text-sm mb-4">{resultData.leaderboard[1].score} puan</div>
-                  <div className="w-full h-40 md:h-56 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-gray-400/50"></div>
-                    <div className="w-12 h-12 rounded-full border-2 border-gray-400/50 flex items-center justify-center text-xl font-bold text-[var(--text-secondary)]">2</div>
+            <div className="w-full flex flex-col gap-3 md:gap-4">
+              {resultData.leaderboard.slice(0, 5).map((player: any, index: number) => (
+                <motion.div
+                  key={player.id}
+                  initial={{ opacity: 0, x: -50 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: index * 0.1 }}
+                  className="flex items-center justify-between bg-[var(--color-quiz-card)] p-4 md:p-6 rounded-2xl border border-[var(--border-color)] shadow-sm"
+                >
+                  <div className="flex items-center gap-4 md:gap-6">
+                    <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-xl ${
+                      index === 0 ? 'bg-yellow-400 text-yellow-900 shadow-[0_0_15px_rgba(250,204,21,0.5)]' :
+                      index === 1 ? 'bg-gray-300 text-gray-800' :
+                      index === 2 ? 'bg-orange-400 text-orange-900' :
+                      'bg-[var(--input-bg)] text-[var(--text-secondary)]'
+                    }`}>
+                      {index + 1}
+                    </div>
+                    <div className="text-xl md:text-2xl font-bold text-[var(--text-primary)]">{player.name}</div>
+                  </div>
+                  <div className="text-xl md:text-2xl font-black text-purple-600 dark:text-purple-400">
+                    {player.score}
                   </div>
                 </motion.div>
-              )}
-              
-              {/* 1st Place */}
-              {resultData.leaderboard[0] && (
-                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.4, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[240px] z-10">
-                  <Trophy size={40} className="text-yellow-400 mb-2 drop-shadow-[0_0_15px_rgba(250,204,21,0.5)]" />
-                  <div className="text-3xl md:text-4xl font-black mb-2 truncate w-full text-center">{resultData.leaderboard[0].name}</div>
-                  <div className="text-yellow-400 font-bold mb-4">{resultData.leaderboard[0].score} puan</div>
-                  <div className="w-full h-56 md:h-72 bg-yellow-400/10 border border-yellow-400/30 rounded-t-3xl flex items-start justify-center pt-8 relative overflow-hidden shadow-[0_-10px_40px_rgba(250,204,21,0.1)]">
-                    <div className="absolute top-0 left-0 right-0 h-2 bg-yellow-400 shadow-[0_0_20px_rgba(250,204,21,0.8)]"></div>
-                    <div className="w-16 h-16 rounded-full border-4 border-yellow-400 flex items-center justify-center text-3xl font-black text-yellow-500 dark:text-yellow-400 shadow-[0_0_15px_rgba(250,204,21,0.3)]">1</div>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* 3rd Place */}
-              {resultData.leaderboard[2] && (
-                <motion.div initial={{ opacity: 0, y: 50 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0, type: "spring" }} className="flex flex-col items-center w-1/3 max-w-[200px]">
-                  <div className="text-xl md:text-2xl font-bold mb-2 truncate w-full text-center text-orange-500 dark:text-orange-300">{resultData.leaderboard[2].name}</div>
-                  <div className="text-[var(--text-secondary)] text-sm mb-4">{resultData.leaderboard[2].score} puan</div>
-                  <div className="w-full h-32 md:h-48 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-t-3xl flex items-start justify-center pt-6 relative overflow-hidden">
-                    <div className="absolute top-0 left-0 right-0 h-1 bg-orange-400/50"></div>
-                    <div className="w-12 h-12 rounded-full border-2 border-orange-400/50 flex items-center justify-center text-xl font-bold text-orange-500 dark:text-orange-300">3</div>
-                  </div>
-                </motion.div>
-              )}
+              ))}
             </div>
           </div>
         ) : (
@@ -327,14 +315,15 @@ export default function HostGame() {
               {question.title}
             </h1>
 
-            <div className="flex-1 relative w-full mb-8 flex items-center justify-center min-h-0">
-              {question.image && (
-                <img src={question.image} alt="Question" className="absolute inset-0 w-full h-full object-cover rounded-3xl opacity-80" />
-              )}
-              
-              <div className="relative z-10 w-24 h-24 md:w-32 md:h-32 rounded-full bg-[var(--color-quiz-bg)]/80 backdrop-blur-md border-4 border-purple-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(168,85,247,0.5)]">
+            <div className="flex-1 relative w-full mb-8 flex flex-col md:flex-row items-center justify-center min-h-0 gap-8">
+              <div className="flex-shrink-0 w-24 h-24 md:w-32 md:h-32 rounded-full bg-[var(--color-quiz-bg)]/80 backdrop-blur-md border-4 border-purple-500 flex items-center justify-center text-4xl md:text-5xl font-black shadow-[0_0_30px_rgba(168,85,247,0.5)]">
                 {timeLeft}
               </div>
+              {question.image && (
+                <div className="flex-1 h-full w-full relative flex items-center justify-center">
+                  <img src={question.image} alt="Question" className="max-w-full max-h-full object-contain rounded-3xl" />
+                </div>
+              )}
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 w-full flex-shrink-0">
