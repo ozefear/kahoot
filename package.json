@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "tsx server.ts",
-    "build": "vite build && tsc server.ts --esModuleInterop",
+    "build": "vite build && tsc server.ts --esModuleInterop --module NodeNext --moduleResolution NodeNext --target ESNext",
     "start": "node --experimental-modules server.js",
     "preview": "vite preview",
     "clean": "rm -rf dist",
