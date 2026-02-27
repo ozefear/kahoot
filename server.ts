@@ -379,6 +379,22 @@ async function startServer() {
   } else {
     // Render.com için Production ayarları güncellendi
     app.use(express.static(path.join(__dirname, "dist")));
+
+      // MOBİL DEBUG RADARI
+  app.get('/api/debug', (req, res) => {
+    const distAudio = path.join(__dirname, 'dist', 'audio');
+    const publicAudio = path.join(__dirname, 'public', 'audio');
+    
+    res.json({
+        sunucuAnaDizini: __dirname,
+        distKlasorundeAudioVarMi: fs.existsSync(distAudio),
+        distDosyalari: fs.existsSync(distAudio) ? fs.readdirSync(distAudio) : "Klasör yok",
+        publicKlasorundeAudioVarMi: fs.existsSync(publicAudio),
+        publicDosyalari: fs.existsSync(publicAudio) ? fs.readdirSync(publicAudio) : "Klasör yok"
+    });
+  });
+
+
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist/index.html"));
     });
