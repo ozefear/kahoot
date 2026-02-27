@@ -6,8 +6,14 @@ import { v4 as uuidv4 } from "uuid";
 import Database from "better-sqlite3";
 import path from "path";
 import fs from "fs";
+import { fileURLToPath } from "url";
 
-const db = new Database("kahoot.db");
+// ES Modülleri için __dirname tanımlaması (Render için gerekli)
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+// Veritabanı yolunu güvenli hale getirdik
+const db = new Database(path.join(__dirname, "kahoot.db"));
 db.exec(`
   CREATE TABLE IF NOT EXISTS question_sets (
     id TEXT PRIMARY KEY,
@@ -54,7 +60,8 @@ const games = new Map<string, GameState>();
 
 async function startServer() {
   const app = express();
-  const PORT = 3000;
+  // Render.com'un atadığı portu kullanması için güncellendi
+  const PORT = process.env.PORT || 3000; 
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
     cors: { origin: "*" },
@@ -62,6 +69,11 @@ async function startServer() {
 
   // API routes
   app.use(express.json());
+
+  // SES DOSYALARI İÇİN STATİK ROTA (Render'da lobby.mp3 çalışması için eklendi)
+  const publicPath = path.join(__dirname, "public");
+  app.use('/audio', express.static(path.join(publicPath, 'audio')));
+
   app.get("/api/health", (req, res) => {
     res.json({ status: "ok" });
   });
@@ -355,8 +367,8 @@ async function startServer() {
     return [...game.players].sort((a, b) => b.score - a.score).slice(0, 3);
   }
 
-  // Vite middleware for development
-  const isProd = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve("dist/index.html"));
+  // Vite middleware for development ve Render.com statik dosya yolları
+  const isProd = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(__dirname, "dist/index.html"));
   
   if (!isProd) {
     const vite = await createViteServer({
@@ -365,14 +377,16 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    app.use(express.static("dist"));
+    // Render.com için Production ayarları güncellendi
+    app.use(express.static(path.join(__dirname, "dist")));
     app.get("*", (req, res) => {
-      res.sendFile(path.resolve("dist/index.html"));
+      res.sendFile(path.join(__dirname, "dist/index.html"));
     });
   }
 
-  httpServer.listen(PORT, "0.0.0.0", () => {
-    console.log(`Server running on http://localhost:${PORT}`);
+  // 0.0.0.0 Render.com dışa açılımı için zorunludur
+  httpServer.listen(Number(PORT), "0.0.0.0", () => {
+    console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
 }
 
