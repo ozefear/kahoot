@@ -320,8 +320,8 @@ export default function HostGame() {
                 {timeLeft}
               </div>
               {question.image && (
-                <div className="flex-1 h-full w-full relative flex items-center justify-center min-h-0 min-w-0">
-                  <img src={question.image} alt="Question" className="max-w-full max-h-full object-contain rounded-2xl md:rounded-3xl" />
+                <div className="flex-1 h-full w-full flex items-center justify-center min-h-0 min-w-0">
+                  <img src={question.image} alt="Question" className="w-full h-full max-h-[40vh] object-contain rounded-2xl md:rounded-3xl" />
                 </div>
               )}
             </div>
