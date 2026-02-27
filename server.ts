@@ -368,8 +368,19 @@ async function startServer() {
   }
 
   // Vite middleware for development ve Render.com statik dosya yolları
+  
+    // ... socket.io kodlarının bitimi ...
+
+  // SES DOSYALARI İÇİN KESİN ÇÖZÜM (Radar sonuçlarına göre)
+  // Express'e öncelikli olarak bu klasörlere bakmasını emrediyoruz:
+  app.use('/audio', express.static(path.join(__dirname, 'dist', 'audio')));
+  app.use('/audio', express.static(path.join(__dirname, 'public', 'audio')));
+
+  // VITE VE REACT YÖNLENDİRMELERİ
   const isProd = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(__dirname, "dist/index.html"));
   
+
+
   if (!isProd) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
