@@ -1,15 +1,17 @@
 import React, { useState, useEffect } from "react";
-import { useNavigate, useSearchParams } from "react-router-dom";
+import { useNavigate, useSearchParams, useLocation } from "react-router-dom";
 import { socket } from "../socket";
-
-import { Sparkles } from "lucide-react";
+import { Sparkles, AlertCircle } from "lucide-react";
 
 export default function Home() {
   const [searchParams] = useSearchParams();
+  const location = useLocation();
   const [pin, setPin] = useState(searchParams.get("pin") || "");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
+
+  const wasKicked = location.state?.kicked === true;
 
   const handleJoin = (e: React.FormEvent) => {
     e.preventDefault();
@@ -19,16 +21,29 @@ export default function Home() {
       if (response.error) {
         setError(response.error);
       } else {
-        navigate(`/player/lobby/${pin}`, { state: { name } });
+        // Mid-game join: navigate directly to game if already started
+        if (response.gameStatus && response.gameStatus !== "lobby") {
+          navigate(`/player/game/${pin}`, { state: { name } });
+        } else {
+          navigate(`/player/lobby/${pin}`, { state: { name } });
+        }
       }
     });
   };
 
   return (
     <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col items-center justify-center p-4 selection:bg-purple-500/30">
+      {/* Kicked banner */}
+      {wasKicked && (
+        <div className="w-full max-w-md mb-4 flex items-center gap-3 bg-red-500/10 border border-red-500/30 text-red-500 dark:text-red-400 rounded-2xl px-5 py-4 font-bold">
+          <AlertCircle size={20} className="flex-shrink-0" />
+          Oyundan atıldınız.
+        </div>
+      )}
+
       <div className="w-full max-w-md bg-[var(--color-quiz-card)] border border-[var(--border-color)] rounded-3xl shadow-2xl p-8 md:p-10 relative overflow-hidden">
         <div className="absolute top-0 left-0 right-0 h-1 bg-gradient-to-r from-purple-500 via-fuchsia-500 to-purple-500"></div>
-        
+
         <div className="flex flex-col items-center mb-10">
           <div className="w-16 h-16 rounded-2xl bg-purple-600/20 flex items-center justify-center border border-purple-500/30 mb-4 shadow-[0_0_20px_rgba(168,85,247,0.2)]">
             <Sparkles className="w-8 h-8 text-purple-500 dark:text-purple-400" />
@@ -37,7 +52,7 @@ export default function Home() {
             ACM Hacettepe
           </h1>
         </div>
-        
+
         <form onSubmit={handleJoin} className="space-y-4">
           <div>
             <input
@@ -59,9 +74,9 @@ export default function Home() {
               maxLength={15}
             />
           </div>
-          
+
           {error && <p className="text-red-500 dark:text-red-400 text-center font-medium bg-red-500/10 py-2 rounded-lg border border-red-500/20">{error}</p>}
-          
+
           <button
             type="submit"
             disabled={!pin || !name}

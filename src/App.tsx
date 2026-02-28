@@ -10,6 +10,7 @@ import HostLobby from "./pages/HostLobby";
 import HostGame from "./pages/HostGame";
 import PlayerLobby from "./pages/PlayerLobby";
 import PlayerGame from "./pages/PlayerGame";
+import GameResults from "./pages/GameResults";
 
 export default function App() {
   return (
@@ -21,6 +22,7 @@ export default function App() {
         <Route path="/host/game/:pin" element={<HostGame />} />
         <Route path="/player/lobby/:pin" element={<PlayerLobby />} />
         <Route path="/player/game/:pin" element={<PlayerGame />} />
+        <Route path="/host/results" element={<GameResults />} />
       </Routes>
     </BrowserRouter>
   );

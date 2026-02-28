@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles, Download, Upload, GripVertical } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles, Download, Upload, GripVertical, BarChart2 } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
 import { SHAPES } from "../components/Shapes";
@@ -75,11 +75,18 @@ export default function HostCreate() {
       return;
     }
 
-    socket.emit("host_create_game", { questions }, (response: any) => {
-      if (response.pin) {
-        navigate(`/host/lobby/${response.pin}`);
+    // Save hostNickname for results page
+    if (hostNickname) sessionStorage.setItem("hostNickname", hostNickname);
+
+    socket.emit(
+      "host_create_game",
+      { questions, hostNickname: hostNickname || "unknown", title: setTitle || "Yarışma" },
+      (response: any) => {
+        if (response.pin) {
+          navigate(`/host/lobby/${response.pin}`);
+        }
       }
-    });
+    );
   };
 
   const handleSaveSet = () => {
@@ -156,7 +163,7 @@ export default function HostCreate() {
     <div className="min-h-screen bg-[var(--color-quiz-bg)] bg-dot-pattern flex flex-col font-sans text-[var(--text-primary)] selection:bg-purple-500/30">
       <header className="flex items-center justify-between px-4 md:px-8 py-4 md:py-6 border-b border-[var(--border-color)] bg-[var(--color-quiz-bg)]/80 backdrop-blur-md z-20 relative">
         <div className="flex items-center gap-3">
-          <button 
+          <button
             onClick={() => setSidebarOpen(!sidebarOpen)}
             className="md:hidden p-2 text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] rounded-lg transition-colors"
           >
@@ -195,6 +202,13 @@ export default function HostCreate() {
             <span className="hidden sm:inline">Kaydet</span>
           </button>
           <button
+            onClick={() => navigate("/host/results")}
+            className="bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-[var(--input-focus)] hover:text-[var(--text-primary)] flex items-center gap-2 text-sm md:text-base transition-colors"
+          >
+            <BarChart2 size={20} />
+            <span className="hidden sm:inline">Sonuçlar</span>
+          </button>
+          <button
             onClick={handleCreateLobby}
             className="bg-purple-600 text-white px-4 md:px-6 py-2 rounded-lg font-bold hover:bg-purple-700 flex items-center gap-2 text-sm md:text-base shadow-[0_0_20px_rgba(168,85,247,0.3)] hover:shadow-[0_0_30px_rgba(168,85,247,0.5)] transition-all"
           >
@@ -225,11 +239,10 @@ export default function HostCreate() {
                             setActiveQuestionId(q.id);
                             setSidebarOpen(false);
                           }}
-                          className={`p-4 rounded-xl border cursor-pointer relative group transition-colors ${
-                            activeQuestionId === q.id
+                          className={`p-4 rounded-xl border cursor-pointer relative group transition-colors ${activeQuestionId === q.id
                               ? "border-purple-500 bg-purple-500/10"
                               : "border-[var(--border-color)] hover:border-purple-500/50 bg-[var(--input-bg)]"
-                          }`}
+                            }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
                             <div {...provided.dragHandleProps} className="text-[var(--text-secondary)] hover:text-[var(--text-primary)] cursor-grab active:cursor-grabbing">
@@ -270,7 +283,7 @@ export default function HostCreate() {
 
         {/* Overlay for mobile sidebar */}
         {sidebarOpen && (
-          <div 
+          <div
             className="absolute inset-0 bg-black/50 z-0 md:hidden backdrop-blur-sm"
             onClick={() => setSidebarOpen(false)}
           />
@@ -316,7 +329,7 @@ export default function HostCreate() {
                   </>
                 )}
               </div>
-              
+
               <div className="flex flex-col gap-4 w-full md:w-auto">
                 <div className="bg-[var(--color-quiz-card)] p-4 rounded-2xl shadow-sm border border-[var(--border-color)]">
                   <label className="block text-sm font-bold text-[var(--text-secondary)] mb-2">
@@ -370,11 +383,10 @@ export default function HostCreate() {
                       onClick={() =>
                         updateActiveQuestion({ correctOptionIndex: index })
                       }
-                      className={`w-8 h-8 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-black/20 ml-2 transition-colors ${
-                        activeQuestion.correctOptionIndex === index
+                      className={`w-8 h-8 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-black/20 ml-2 transition-colors ${activeQuestion.correctOptionIndex === index
                           ? "border-white bg-white/20"
                           : "border-white/30 hover:border-white/60"
-                      }`}
+                        }`}
                     >
                       {activeQuestion.correctOptionIndex === index && (
                         <div className="w-3 h-3 bg-white rounded-full shadow-sm" />

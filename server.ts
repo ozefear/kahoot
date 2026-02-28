@@ -8,11 +8,9 @@ import path from "path";
 import fs from "fs";
 import { fileURLToPath } from "url";
 
-// ES Modülleri için __dirname tanımlaması (Render için gerekli)
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-// Veritabanı yolunu güvenli hale getirdik
 const db = new Database(path.join(__dirname, "kahoot.db"));
 db.exec(`
   CREATE TABLE IF NOT EXISTS question_sets (
@@ -20,7 +18,18 @@ db.exec(`
     host_nickname TEXT,
     title TEXT,
     questions TEXT
-  )
+  );
+  CREATE TABLE IF NOT EXISTS game_results (
+    id TEXT PRIMARY KEY,
+    pin TEXT,
+    host_nickname TEXT,
+    title TEXT,
+    date TEXT,
+    total_players INTEGER,
+    questions_data TEXT,
+    players_data TEXT,
+    leaderboard TEXT
+  );
 `);
 
 // Types
@@ -33,20 +42,31 @@ type Question = {
   timeLimit: number;
 };
 
+type PlayerAnswerRecord = {
+  questionIndex: number;
+  answerIndex?: number;
+  correct: boolean;
+  pointsEarned: number;
+  timeTakenMs?: number;
+};
+
 type Player = {
-  id: string; // socket id
+  id: string;
   name: string;
   score: number;
   currentAnswerIndex?: number;
-  answeredAt?: number; // timestamp
+  answeredAt?: number;
   streak: number;
   isConnected?: boolean;
   lastResult?: any;
+  answerHistory: PlayerAnswerRecord[];
 };
 
 type GameState = {
   pin: string;
   hostSocketId: string;
+  hostNickname: string;
+  title: string;
   status: "lobby" | "question" | "leaderboard" | "finished";
   questions: Question[];
   currentQuestionIndex: number;
@@ -60,17 +80,14 @@ const games = new Map<string, GameState>();
 
 async function startServer() {
   const app = express();
-  // Render.com'un atadığı portu kullanması için güncellendi
-  const PORT = process.env.PORT || 3000; 
+  const PORT = process.env.PORT || 3000;
   const httpServer = createServer(app);
   const io = new Server(httpServer, {
     cors: { origin: "*" },
   });
 
-  // API routes
   app.use(express.json());
 
-  // SES DOSYALARI İÇİN STATİK ROTA (Render'da lobby.mp3 çalışması için eklendi)
   const publicPath = path.join(__dirname, "public");
   app.use('/audio', express.static(path.join(publicPath, 'audio')));
 
@@ -78,10 +95,10 @@ async function startServer() {
     res.json({ status: "ok" });
   });
 
-  // Socket.io logic
   io.on("connection", (socket) => {
     console.log("Client connected:", socket.id);
 
+    // ── Question Sets ────────────────────────────────────────────────────────
     socket.on("save_set", (data: { hostNickname: string; title: string; questions: Question[] }, callback) => {
       try {
         const id = uuidv4();
@@ -104,18 +121,53 @@ async function startServer() {
       }
     });
 
+    // ── Game Results ─────────────────────────────────────────────────────────
+    socket.on("get_game_results", (data: { hostNickname: string }, callback) => {
+      try {
+        const stmt = db.prepare(
+          'SELECT id, pin, title, date, total_players FROM game_results WHERE host_nickname = ? ORDER BY date DESC'
+        );
+        const rows = stmt.all(data.hostNickname) as any[];
+        callback({ success: true, results: rows });
+      } catch (e) {
+        callback({ error: "Sonuçlar alınamadı" });
+      }
+    });
+
+    socket.on("get_game_detail", (data: { id: string }, callback) => {
+      try {
+        const stmt = db.prepare('SELECT * FROM game_results WHERE id = ?');
+        const row = stmt.get(data.id) as any;
+        if (!row) return callback({ error: "Bulunamadı" });
+        callback({
+          success: true,
+          result: {
+            ...row,
+            questions_data: JSON.parse(row.questions_data),
+            players_data: JSON.parse(row.players_data),
+            leaderboard: JSON.parse(row.leaderboard),
+          }
+        });
+      } catch (e) {
+        callback({ error: "Detay alınamadı" });
+      }
+    });
+
+    // ── Host Rejoin ──────────────────────────────────────────────────────────
     socket.on("rejoin_host", (data: { pin: string }, callback) => {
       const game = games.get(data.pin);
       if (game) {
         game.hostSocketId = socket.id;
         socket.join(data.pin);
         const { timer, ...safeGame } = game;
+        io.to(data.pin).emit("host_reconnected");
         callback({ success: true, game: safeGame });
       } else {
         callback({ error: "Oyun bulunamadı" });
       }
     });
 
+    // ── Player Rejoin ────────────────────────────────────────────────────────
     socket.on("rejoin_player", (data: { pin: string; name: string }, callback) => {
       const game = games.get(data.pin);
       if (game) {
@@ -125,11 +177,21 @@ async function startServer() {
           player.isConnected = true;
           socket.join(data.pin);
           const { timer, ...safeGame } = game;
-          
-          // Notify host they are back
+
+          let remainingTime = undefined;
+          if (game.status === "question" && game.questionStartTime) {
+            const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+            const currentQuestion = game.questions[game.currentQuestionIndex];
+            remainingTime = Math.max(0, currentQuestion.timeLimit - elapsed);
+          }
+
+          let leaderboard = undefined;
+          if (game.status === "finished") {
+            leaderboard = getLeaderboard(game);
+          }
+
           io.to(game.hostSocketId).emit("player_joined", player);
-          
-          callback({ success: true, game: safeGame, player });
+          callback({ success: true, game: safeGame, player, remainingTime, leaderboard });
         } else {
           callback({ error: "Oyuncu bulunamadı" });
         }
@@ -138,12 +200,14 @@ async function startServer() {
       }
     });
 
-    // Host creates a game
-    socket.on("host_create_game", (data: { questions: Question[] }, callback) => {
+    // ── Host Creates Game ────────────────────────────────────────────────────
+    socket.on("host_create_game", (data: { questions: Question[]; hostNickname?: string; title?: string }, callback) => {
       const pin = Math.floor(100000 + Math.random() * 900000).toString();
       const gameState: GameState = {
         pin,
         hostSocketId: socket.id,
+        hostNickname: data.hostNickname || "unknown",
+        title: data.title || "Yarışma",
         status: "lobby",
         questions: data.questions,
         currentQuestionIndex: 0,
@@ -155,32 +219,78 @@ async function startServer() {
       console.log(`Game created with PIN: ${pin}`);
     });
 
-    // Player joins a game
+    // ── Player Joins ─────────────────────────────────────────────────────────
     socket.on("player_join", (data: { pin: string; name: string }, callback) => {
       const game = games.get(data.pin);
       if (!game) {
         return callback({ error: "Oyun bulunamadı" });
       }
-      if (game.status !== "lobby") {
-        return callback({ error: "Oyun zaten başladı" });
+
+      // Check for duplicate name
+      if (game.players.find(p => p.name === data.name && p.isConnected)) {
+        return callback({ error: "Bu isim zaten kullanımda" });
       }
-      
+
       const newPlayer: Player = {
         id: socket.id,
         name: data.name,
         score: 0,
         streak: 0,
         isConnected: true,
+        answerHistory: [],
       };
       game.players.push(newPlayer);
       socket.join(data.pin);
-      
-      // Notify host
+
       io.to(game.hostSocketId).emit("player_joined", newPlayer);
-      callback({ success: true, player: newPlayer });
+
+      // Mid-game late join: send them the current question immediately
+      if (game.status === "question" && game.questionStartTime) {
+        const currentQuestion = game.questions[game.currentQuestionIndex];
+        const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+        const remainingTime = Math.max(0, currentQuestion.timeLimit - elapsed);
+        const playerQuestion = {
+          title: currentQuestion.title,
+          image: currentQuestion.image,
+          options: currentQuestion.options,
+          timeLimit: currentQuestion.timeLimit,
+          remainingTime,
+        };
+        socket.emit("new_question", { question: playerQuestion });
+      }
+
+      callback({ success: true, player: newPlayer, gameStatus: game.status });
     });
 
-    // Host starts the game
+    // ── Kick Player ──────────────────────────────────────────────────────────
+    socket.on("kick_player", (data: { pin: string; name: string }, callback?: Function) => {
+      const game = games.get(data.pin);
+      if (!game || game.hostSocketId !== socket.id) return;
+
+      const playerIndex = game.players.findIndex(p => p.name === data.name);
+      if (playerIndex !== -1) {
+        const player = game.players[playerIndex];
+        // Tell the player they've been kicked
+        io.to(player.id).emit("you_are_kicked");
+        // Remove from game
+        game.players.splice(playerIndex, 1);
+        // Notify host UI
+        io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
+
+        // If they were answering a question, check if we should end it now
+        if (game.status === "question") {
+          const connectedPlayers = game.players.filter(p => p.isConnected);
+          const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every(p => p.currentAnswerIndex !== undefined);
+          if (allAnswered && game.timer) {
+            clearTimeout(game.timer);
+            endQuestion(game, io);
+          }
+        }
+        if (callback) callback({ success: true });
+      }
+    });
+
+    // ── Host Starts Game ─────────────────────────────────────────────────────
     socket.on("host_start_game", (data: { pin: string }) => {
       const game = games.get(data.pin);
       if (game && game.hostSocketId === socket.id) {
@@ -188,7 +298,7 @@ async function startServer() {
       }
     });
 
-    // Player submits an answer
+    // ── Player Answers ───────────────────────────────────────────────────────
     socket.on("player_answer", (data: { pin: string; answerIndex: number }) => {
       const game = games.get(data.pin);
       if (game && game.status === "question") {
@@ -196,12 +306,14 @@ async function startServer() {
         if (player && player.currentAnswerIndex === undefined) {
           player.currentAnswerIndex = data.answerIndex;
           player.answeredAt = Date.now();
-          
-          // Notify host that a player answered
-          io.to(game.hostSocketId).emit("player_answered", { playerId: player.id });
+
+          const connectedPlayers = game.players.filter(p => p.isConnected);
+          io.to(game.hostSocketId).emit("player_answered", {
+            playerId: player.id,
+            totalConnected: connectedPlayers.length,
+          });
 
           // Check if all connected players answered
-          const connectedPlayers = game.players.filter(p => p.isConnected);
           const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.currentAnswerIndex !== undefined);
           if (allAnswered && game.timer) {
             clearTimeout(game.timer);
@@ -211,7 +323,7 @@ async function startServer() {
       }
     });
 
-    // Host requests next step (leaderboard or next question)
+    // ── Host Next Step ───────────────────────────────────────────────────────
     socket.on("host_next_step", (data: { pin: string }) => {
       const game = games.get(data.pin);
       if (game && game.hostSocketId === socket.id) {
@@ -224,29 +336,27 @@ async function startServer() {
             startGameLoop(game, io);
           } else {
             game.status = "finished";
-            io.to(game.pin).emit("game_over", {
-              leaderboard: getLeaderboard(game),
-            });
+            const leaderboard = getLeaderboard(game);
+            io.to(game.pin).emit("game_over", { leaderboard });
+            // Auto-save game results
+            saveGameResults(game, leaderboard);
           }
         }
       }
     });
 
+    // ── Disconnect ───────────────────────────────────────────────────────────
     socket.on("disconnect", () => {
-      // Find if player was in any game
       for (const [pin, game] of games.entries()) {
         if (game.hostSocketId === socket.id) {
-          // Host disconnected, don't delete game immediately so they can rejoin
           io.to(pin).emit("host_disconnected");
         } else {
           const playerIndex = game.players.findIndex((p) => p.id === socket.id);
           if (playerIndex !== -1) {
             const player = game.players[playerIndex];
             player.isConnected = false;
-            // Don't remove player so they can rejoin
             io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
-            
-            // If they disconnected during a question, check if we should end it
+
             if (game.status === "question") {
               const connectedPlayers = game.players.filter(p => p.isConnected);
               const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.currentAnswerIndex !== undefined);
@@ -261,11 +371,11 @@ async function startServer() {
     });
   });
 
+  // ── Game Loop ───────────────────────────────────────────────────────────────
   function startGameLoop(game: GameState, io: Server) {
     game.status = "question";
     const currentQuestion = game.questions[game.currentQuestionIndex];
-    
-    // Reset player answers
+
     game.players.forEach((p) => {
       p.currentAnswerIndex = undefined;
       p.answeredAt = undefined;
@@ -273,28 +383,26 @@ async function startServer() {
 
     game.questionStartTime = Date.now();
 
-    // Send question to host and players
+    const connectedPlayers = game.players.filter(p => p.isConnected);
+
     io.to(game.hostSocketId).emit("new_question", {
       question: currentQuestion,
       questionIndex: game.currentQuestionIndex,
       totalQuestions: game.questions.length,
+      totalPlayers: connectedPlayers.length,
     });
 
-    // Players don't get the correct answer or title/image, just options count/colors
-    // But for simplicity, let's send them the whole question without correctOptionIndex
     const playerQuestion = {
       title: currentQuestion.title,
       image: currentQuestion.image,
       options: currentQuestion.options,
       timeLimit: currentQuestion.timeLimit,
     };
-    
-    // Broadcast to players (excluding host)
+
     game.players.forEach((p) => {
       io.to(p.id).emit("new_question", { question: playerQuestion });
     });
 
-    // Start timer
     game.timer = setTimeout(() => {
       endQuestion(game, io);
     }, currentQuestion.timeLimit * 1000);
@@ -303,48 +411,64 @@ async function startServer() {
   function endQuestion(game: GameState, io: Server) {
     game.status = "leaderboard";
     const currentQuestion = game.questions[game.currentQuestionIndex];
-    
-    // Calculate previous ranks
+
     const prevLeaderboard = [...game.players].sort((a, b) => b.score - a.score);
     const prevRanks = new Map(prevLeaderboard.map((p, i) => [p.id, i + 1]));
 
-    // Calculate scores
     game.players.forEach((p) => {
       const prevScore = p.score;
-      if (p.currentAnswerIndex === currentQuestion.correctOptionIndex) {
-        // Base score + time bonus
+      const isCorrect = p.currentAnswerIndex === currentQuestion.correctOptionIndex;
+      let pointsEarned = 0;
+
+      if (isCorrect) {
         const timeTaken = p.answeredAt ? p.answeredAt - (game.questionStartTime || 0) : currentQuestion.timeLimit * 1000;
         const timeRatio = Math.max(0, 1 - timeTaken / (currentQuestion.timeLimit * 1000));
-        const points = Math.round(500 + 500 * timeRatio);
-        p.score += points;
+        pointsEarned = Math.round(500 + 500 * timeRatio);
+        p.score += pointsEarned;
         p.streak = (p.streak || 0) + 1;
       } else {
         p.streak = 0;
       }
-      
-      // Send results to players
+
+      // Record answer history for saved results
+      p.answerHistory.push({
+        questionIndex: game.currentQuestionIndex,
+        answerIndex: p.currentAnswerIndex,
+        correct: isCorrect,
+        pointsEarned,
+        timeTakenMs: p.answeredAt ? p.answeredAt - (game.questionStartTime || 0) : undefined,
+      });
+
       p.lastResult = {
-        correct: p.currentAnswerIndex === currentQuestion.correctOptionIndex,
+        correct: isCorrect,
         correctOptionIndex: currentQuestion.correctOptionIndex,
         score: p.score,
-        pointsEarned: p.score - prevScore,
+        pointsEarned,
         streak: p.streak,
       };
-      io.to(p.id).emit("question_result", p.lastResult);
     });
 
+    // Calculate new ranks
     const newLeaderboard = [...game.players].sort((a, b) => b.score - a.score);
     const newRanks = new Map(newLeaderboard.map((p, i) => [p.id, i + 1]));
-    
+
+    // Send individual results to each player (including their rank)
+    game.players.forEach((p) => {
+      io.to(p.id).emit("question_result", {
+        ...p.lastResult,
+        rank: newRanks.get(p.id) || 0,
+        totalPlayers: game.players.length,
+      });
+    });
+
     const rankChanges = game.players.map(p => {
       const prev = prevRanks.get(p.id) || 0;
       const curr = newRanks.get(p.id) || 0;
-      return { name: p.name, change: prev - curr, newRank: curr };
+      return { name: p.name, change: prev - curr, newRank: curr, streak: p.streak };
     }).filter(p => p.change > 0).sort((a, b) => b.change - a.change);
 
     const highestClimber = rankChanges.length > 0 ? rankChanges[0] : null;
 
-    // Send results to host
     const answerCounts = [0, 0, 0, 0];
     game.players.forEach((p) => {
       if (p.currentAnswerIndex !== undefined) {
@@ -352,10 +476,17 @@ async function startServer() {
       }
     });
 
+    const leaderboardWithStreaks = newLeaderboard.slice(0, 5).map(p => ({
+      id: p.id,
+      name: p.name,
+      score: p.score,
+      streak: p.streak,
+    }));
+
     const resultData = {
       correctOptionIndex: currentQuestion.correctOptionIndex,
       answerCounts,
-      leaderboard: getLeaderboard(game),
+      leaderboard: leaderboardWithStreaks,
       highestClimber,
     };
     game.lastResultData = resultData;
@@ -364,22 +495,83 @@ async function startServer() {
   }
 
   function getLeaderboard(game: GameState) {
-    return [...game.players].sort((a, b) => b.score - a.score).slice(0, 3);
+    return [...game.players].sort((a, b) => b.score - a.score).slice(0, 10).map((p, i) => ({
+      id: p.id,
+      name: p.name,
+      score: p.score,
+      streak: p.streak,
+      rank: i + 1,
+    }));
   }
 
-  // Vite middleware for development ve Render.com statik dosya yolları
-  
-    // ... socket.io kodlarının bitimi ...
+  function saveGameResults(game: GameState, leaderboard: any[]) {
+    try {
+      const questionsData = game.questions.map((q, qi) => {
+        const answerCounts = [0, 0, 0, 0];
+        let fastestMs: number | undefined;
+        let correctCount = 0;
 
-  // SES DOSYALARI İÇİN KESİN ÇÖZÜM (Radar sonuçlarına göre)
-  // Express'e öncelikli olarak bu klasörlere bakmasını emrediyoruz:
+        game.players.forEach(p => {
+          const record = p.answerHistory.find(h => h.questionIndex === qi);
+          if (record) {
+            if (record.answerIndex !== undefined) answerCounts[record.answerIndex]++;
+            if (record.correct) {
+              correctCount++;
+              if (record.timeTakenMs !== undefined && (fastestMs === undefined || record.timeTakenMs < fastestMs)) {
+                fastestMs = record.timeTakenMs;
+              }
+            }
+          }
+        });
+
+        return {
+          title: q.title,
+          options: q.options,
+          correctOptionIndex: q.correctOptionIndex,
+          answerCounts,
+          correctRate: game.players.length > 0 ? Math.round((correctCount / game.players.length) * 100) : 0,
+          fastestMs,
+        };
+      });
+
+      const playersData = game.players.map((p, _) => {
+        const rank = leaderboard.findIndex(l => l.name === p.name) + 1;
+        return {
+          name: p.name,
+          score: p.score,
+          streak: p.streak,
+          finalRank: rank > 0 ? rank : game.players.length,
+          answers: p.answerHistory,
+          correctCount: p.answerHistory.filter(h => h.correct).length,
+          wrongCount: p.answerHistory.filter(h => !h.correct).length,
+        };
+      });
+
+      const stmt = db.prepare(
+        'INSERT INTO game_results (id, pin, host_nickname, title, date, total_players, questions_data, players_data, leaderboard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
+      );
+      stmt.run(
+        uuidv4(),
+        game.pin,
+        game.hostNickname,
+        game.title,
+        new Date().toISOString(),
+        game.players.length,
+        JSON.stringify(questionsData),
+        JSON.stringify(playersData),
+        JSON.stringify(leaderboard)
+      );
+      console.log(`Game results saved for PIN: ${game.pin}`);
+    } catch (e) {
+      console.error("Failed to save game results:", e);
+    }
+  }
+
+  // ── Static / Vite ───────────────────────────────────────────────────────────
   app.use('/audio', express.static(path.join(__dirname, 'dist', 'audio')));
   app.use('/audio', express.static(path.join(__dirname, 'public', 'audio')));
 
-  // VITE VE REACT YÖNLENDİRMELERİ
   const isProd = process.env.NODE_ENV === "production" || fs.existsSync(path.resolve(__dirname, "dist/index.html"));
-  
-
 
   if (!isProd) {
     const vite = await createViteServer({
@@ -388,30 +580,25 @@ async function startServer() {
     });
     app.use(vite.middlewares);
   } else {
-    // Render.com için Production ayarları güncellendi
     app.use(express.static(path.join(__dirname, "dist")));
 
-      // MOBİL DEBUG RADARI
-  app.get('/api/debug', (req, res) => {
-    const distAudio = path.join(__dirname, 'dist', 'audio');
-    const publicAudio = path.join(__dirname, 'public', 'audio');
-    
-    res.json({
+    app.get('/api/debug', (req, res) => {
+      const distAudio = path.join(__dirname, 'dist', 'audio');
+      const publicAudio = path.join(__dirname, 'public', 'audio');
+      res.json({
         sunucuAnaDizini: __dirname,
         distKlasorundeAudioVarMi: fs.existsSync(distAudio),
         distDosyalari: fs.existsSync(distAudio) ? fs.readdirSync(distAudio) : "Klasör yok",
         publicKlasorundeAudioVarMi: fs.existsSync(publicAudio),
         publicDosyalari: fs.existsSync(publicAudio) ? fs.readdirSync(publicAudio) : "Klasör yok"
+      });
     });
-  });
-
 
     app.get("*", (req, res) => {
       res.sendFile(path.join(__dirname, "dist/index.html"));
     });
   }
 
-  // 0.0.0.0 Render.com dışa açılımı için zorunludur
   httpServer.listen(Number(PORT), "0.0.0.0", () => {
     console.log(`Server running on http://0.0.0.0:${PORT}`);
   });
