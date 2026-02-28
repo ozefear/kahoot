@@ -1,7 +1,7 @@
 import { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Check, Trophy, ArrowRight, TrendingUp, Volume2, VolumeX, Flame } from "lucide-react";
+import { Check, Trophy, ArrowRight, TrendingUp, Volume2, VolumeX, Flame, BarChart2 } from "lucide-react";
 import { SHAPES } from "../components/Shapes";
 import { motion, AnimatePresence } from "motion/react";
 
@@ -55,6 +55,7 @@ export default function HostGame() {
   const [gameOver, setGameOver] = useState(false);
   const [finalLeaderboard, setFinalLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [audioEnabled, setAudioEnabled] = useState(false);
+  const [savedGameId, setSavedGameId] = useState<string | null>(null);
   // For animated podium reveal: which spots have been revealed
   const [revealedSpots, setRevealedSpots] = useState<number[]>([]);
 
@@ -168,6 +169,10 @@ export default function HostGame() {
       }
     };
 
+    const onGameSaved = (data: any) => {
+      setSavedGameId(data.id);
+    };
+
     socket.on("connect", onConnect);
     socket.on("new_question", onNewQuestion);
     socket.on("player_answered", onPlayerAnswered);
@@ -175,6 +180,7 @@ export default function HostGame() {
     socket.on("player_left", onPlayerLeft);
     socket.on("question_result", onQuestionResult);
     socket.on("game_over", onGameOver);
+    socket.on("game_saved", onGameSaved);
 
     return () => {
       socket.off("connect", onConnect);
@@ -184,6 +190,7 @@ export default function HostGame() {
       socket.off("player_left", onPlayerLeft);
       socket.off("question_result", onQuestionResult);
       socket.off("game_over", onGameOver);
+      socket.off("game_saved", onGameSaved);
     };
   }, [audioEnabled, pin]);
 
@@ -299,15 +306,28 @@ export default function HostGame() {
           </div>
         )}
 
-        <motion.button
+        <motion.div
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           transition={{ delay: 3.5 }}
-          onClick={() => navigate("/")}
-          className="mt-4 bg-purple-600 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-purple-700 transition-colors shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+          className="flex flex-wrap gap-4 justify-center mt-4"
         >
-          Ana Sayfaya Dön
-        </motion.button>
+          {savedGameId && (
+            <button
+              onClick={() => navigate(`/host/results?id=${savedGameId}`)}
+              className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] text-[var(--text-primary)] px-8 py-3 rounded-full font-bold text-lg hover:bg-[var(--input-bg)] transition-colors flex items-center gap-2"
+            >
+              <BarChart2 size={20} className="text-purple-500" />
+              Detaylı Sonuçlar
+            </button>
+          )}
+          <button
+            onClick={() => navigate("/")}
+            className="bg-purple-600 text-white px-8 py-3 rounded-full font-bold text-xl hover:bg-purple-700 transition-colors shadow-[0_0_20px_rgba(168,85,247,0.3)]"
+          >
+            Ana Sayfaya Dön
+          </button>
+        </motion.div>
       </div>
     );
   }
@@ -369,9 +389,9 @@ export default function HostGame() {
                 >
                   <div className="flex items-center gap-4 md:gap-6">
                     <div className={`w-10 h-10 md:w-12 md:h-12 rounded-full flex items-center justify-center font-black text-xl ${index === 0 ? 'bg-yellow-400 text-yellow-900 shadow-[0_0_15px_rgba(250,204,21,0.5)]' :
-                        index === 1 ? 'bg-gray-300 text-gray-800' :
-                          index === 2 ? 'bg-orange-400 text-orange-900' :
-                            'bg-[var(--input-bg)] text-[var(--text-secondary)]'
+                      index === 1 ? 'bg-gray-300 text-gray-800' :
+                        index === 2 ? 'bg-orange-400 text-orange-900' :
+                          'bg-[var(--input-bg)] text-[var(--text-secondary)]'
                       }`}>
                       {index + 1}
                     </div>

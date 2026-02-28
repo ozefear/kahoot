@@ -337,9 +337,12 @@ async function startServer() {
           } else {
             game.status = "finished";
             const leaderboard = getLeaderboard(game);
+            const savedGameId = uuidv4();
+            // Auto-save game results (using pre-generated id so we can pass it to host)
+            saveGameResults(game, leaderboard, savedGameId);
             io.to(game.pin).emit("game_over", { leaderboard });
-            // Auto-save game results
-            saveGameResults(game, leaderboard);
+            // Tell only the host the saved game id so they can navigate to results
+            io.to(game.hostSocketId).emit("game_saved", { id: savedGameId });
           }
         }
       }
@@ -504,7 +507,7 @@ async function startServer() {
     }));
   }
 
-  function saveGameResults(game: GameState, leaderboard: any[]) {
+  function saveGameResults(game: GameState, leaderboard: any[], id?: string) {
     try {
       const questionsData = game.questions.map((q, qi) => {
         const answerCounts = [0, 0, 0, 0];
@@ -551,7 +554,7 @@ async function startServer() {
         'INSERT INTO game_results (id, pin, host_nickname, title, date, total_players, questions_data, players_data, leaderboard) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)'
       );
       stmt.run(
-        uuidv4(),
+        id ?? uuidv4(),
         game.pin,
         game.hostNickname,
         game.title,
