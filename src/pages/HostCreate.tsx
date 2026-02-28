@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
 import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles, Download, Upload, GripVertical, BarChart2 } from "lucide-react";
@@ -230,7 +230,7 @@ export default function HostCreate() {
               {(provided) => (
                 <div {...provided.droppableProps} ref={provided.innerRef} className="flex flex-col gap-4">
                   {questions.map((q, index) => (
-                    <Draggable key={q.id} draggableId={q.id} index={index}>
+                    <Draggable draggableId={q.id} index={index}>
                       {(provided) => (
                         <div
                           ref={provided.innerRef}
@@ -240,8 +240,8 @@ export default function HostCreate() {
                             setSidebarOpen(false);
                           }}
                           className={`p-4 rounded-xl border cursor-pointer relative group transition-colors ${activeQuestionId === q.id
-                              ? "border-purple-500 bg-purple-500/10"
-                              : "border-[var(--border-color)] hover:border-purple-500/50 bg-[var(--input-bg)]"
+                            ? "border-purple-500 bg-purple-500/10"
+                            : "border-[var(--border-color)] hover:border-purple-500/50 bg-[var(--input-bg)]"
                             }`}
                         >
                           <div className="flex items-center gap-2 mb-2">
@@ -384,8 +384,8 @@ export default function HostCreate() {
                         updateActiveQuestion({ correctOptionIndex: index })
                       }
                       className={`w-8 h-8 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-black/20 ml-2 transition-colors ${activeQuestion.correctOptionIndex === index
-                          ? "border-white bg-white/20"
-                          : "border-white/30 hover:border-white/60"
+                        ? "border-white bg-white/20"
+                        : "border-white/30 hover:border-white/60"
                         }`}
                     >
                       {activeQuestion.correctOptionIndex === index && (
