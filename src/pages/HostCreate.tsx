@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { socket } from "../socket";
-import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles, Download, Upload, GripVertical, BarChart2 } from "lucide-react";
+import { Plus, Trash2, Image as ImageIcon, Save, Menu, X, FolderOpen, Play, Sparkles, Download, Upload, GripVertical, BarChart2, Crown, Tv, Clapperboard, Palette, Check } from "lucide-react";
 import { DragDropContext, Droppable, Draggable } from "@hello-pangea/dnd";
 import { v4 as uuidv4 } from "uuid";
 import { SHAPES } from "../components/Shapes";
+import { THEMES, THEME_LIST, applyTheme, getTheme } from "../themes";
 
 type Question = {
   id: string;
@@ -15,24 +16,65 @@ type Question = {
   timeLimit: number;
 };
 
+const SITCOM_DEFAULT_QUESTIONS: Question[] = [
+  {
+    id: uuidv4(),
+    title: "Friends dizisinde Ross Geller'ın meşhur evcil maymununun adı nedir?",
+    options: ["Marcel", "Joey", "Gunther", "Paolo"],
+    correctOptionIndex: 0,
+    timeLimit: 20,
+  },
+  {
+    id: uuidv4(),
+    title: "The Office dizisinde Dwight Schrute'un çiftliğinde (Schrute Farms) en çok yetiştirdiği ürün hangisidir?",
+    options: ["Patates", "Pancar (Beets)", "Mısır", "Havuç"],
+    correctOptionIndex: 1,
+    timeLimit: 20,
+  },
+  {
+    id: uuidv4(),
+    title: "Brooklyn Nine-Nine'da Dedektif Jake Peralta'nın favori filmi ve hayat felsefesi hangisidir?",
+    options: ["Zor Ölüm (Die Hard)", "Görevimiz Tehlike", "Cehennem Silahı", "Hızlı ve Öfkeli"],
+    correctOptionIndex: 0,
+    timeLimit: 20,
+  },
+  {
+    id: uuidv4(),
+    title: "How I Met Your Mother'da Barney Stinson'ın kadınları tavlamak için yazdığı efsanevi kitabın adı nedir?",
+    options: ["The Bro Code", "Suit Up Guide", "The Playbook", "Legendary Rules"],
+    correctOptionIndex: 2,
+    timeLimit: 20,
+  },
+  {
+    id: uuidv4(),
+    title: "Seinfeld dizisinde George Costanza'nın uydurduğu sahte hayır kurumunun adı nedir?",
+    options: ["Vandelay Industries", "Kramerica", "The Human Fund", "Festivus Foundation"],
+    correctOptionIndex: 2,
+    timeLimit: 20,
+  },
+];
+
 export default function HostCreate() {
   const navigate = useNavigate();
-  const [questions, setQuestions] = useState<Question[]>([
-    {
-      id: uuidv4(),
-      title: "",
-      options: ["", "", "", ""],
-      correctOptionIndex: 0,
-      timeLimit: 20,
-    },
-  ]);
-  const [activeQuestionId, setActiveQuestionId] = useState(questions[0].id);
+  const [questions, setQuestions] = useState<Question[]>(SITCOM_DEFAULT_QUESTIONS);
+  const [activeQuestionId, setActiveQuestionId] = useState(SITCOM_DEFAULT_QUESTIONS[0].id);
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [showLoadModal, setShowLoadModal] = useState(false);
-  const [hostNickname, setHostNickname] = useState("");
-  const [setTitle, setSetTitle] = useState("");
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showThemeModal, setShowThemeModal] = useState(false);
+  const [hostNickname, setHostNickname] = useState(sessionStorage.getItem("hostNickname") || "");
+  const [selectedTheme, setSelectedTheme] = useState(() => sessionStorage.getItem("selectedTheme") || "sitcom");
+  const [setTitle, setSetTitle] = useState(() => {
+    const stored = sessionStorage.getItem("setTitle");
+    if (!stored || stored === "ACM Kahoot" || stored.includes("Sitcom Gecesi")) return "Hacettepe Kahoot";
+    return stored;
+  });
   const [savedSets, setSavedSets] = useState<any[]>([]);
+
+  useEffect(() => {
+    applyTheme(selectedTheme);
+  }, [selectedTheme]);
 
   const activeQuestionIndex = questions.findIndex((q) => q.id === activeQuestionId);
   const activeQuestion = questions[activeQuestionIndex];
@@ -65,8 +107,51 @@ export default function HostCreate() {
     }
   };
 
+  const handleLoadSitcomTemplate = () => {
+    const freshQuestions: Question[] = [
+      {
+        id: uuidv4(),
+        title: "Friends dizisinde Ross Geller'ın meşhur evcil maymununun adı nedir?",
+        options: ["Marcel", "Joey", "Gunther", "Paolo"],
+        correctOptionIndex: 0,
+        timeLimit: 20,
+      },
+      {
+        id: uuidv4(),
+        title: "The Office dizisinde Dwight Schrute'un çiftliğinde (Schrute Farms) en çok yetiştirdiği ürün hangisidir?",
+        options: ["Patates", "Pancar (Beets)", "Mısır", "Havuç"],
+        correctOptionIndex: 1,
+        timeLimit: 20,
+      },
+      {
+        id: uuidv4(),
+        title: "Brooklyn Nine-Nine'da Dedektif Jake Peralta'nın favori filmi ve hayat felsefesi hangisidir?",
+        options: ["Zor Ölüm (Die Hard)", "Görevimiz Tehlike", "Cehennem Silahı", "Hızlı ve Öfkeli"],
+        correctOptionIndex: 0,
+        timeLimit: 20,
+      },
+      {
+        id: uuidv4(),
+        title: "How I Met Your Mother'da Barney Stinson'ın kadınları tavlamak için yazdığı efsanevi kitabın adı nedir?",
+        options: ["The Bro Code", "Suit Up Guide", "The Playbook", "Legendary Rules"],
+        correctOptionIndex: 2,
+        timeLimit: 20,
+      },
+      {
+        id: uuidv4(),
+        title: "Seinfeld dizisinde George Costanza'nın uydurduğu sahte hayır kurumunun adı nedir?",
+        options: ["Vandelay Industries", "Kramerica", "The Human Fund", "Festivus Foundation"],
+        correctOptionIndex: 2,
+        timeLimit: 20,
+      },
+    ];
+    setQuestions(freshQuestions);
+    setActiveQuestionId(freshQuestions[0].id);
+    setSetTitle("Hacettepe Kahoot - Sitcom Gecesi");
+  };
+
   const handleCreateLobby = () => {
-    // Validate
+    // Validate questions
     const isValid = questions.every(
       (q) => q.title.trim() && q.options.every((opt) => opt.trim())
     );
@@ -75,14 +160,51 @@ export default function HostCreate() {
       return;
     }
 
-    // Save hostNickname for results page
-    if (hostNickname) sessionStorage.setItem("hostNickname", hostNickname);
+    if (!hostNickname.trim()) {
+      setShowCreateModal(true);
+      return;
+    }
+
+    const effectiveAdmin = hostNickname.trim();
+    const effectiveTitle = setTitle.trim() || "Hacettepe Kahoot";
+    sessionStorage.setItem("hostNickname", effectiveAdmin);
+    sessionStorage.setItem("setTitle", effectiveTitle);
+    sessionStorage.setItem("selectedTheme", selectedTheme);
+
+    if (!socket.connected) {
+      socket.connect();
+    }
 
     socket.emit(
       "host_create_game",
-      { questions, hostNickname: hostNickname || "unknown", title: setTitle || "Yarışma" },
+      { questions, hostNickname: effectiveAdmin, title: effectiveTitle, theme: selectedTheme },
       (response: any) => {
-        if (response.pin) {
+        if (response && response.pin) {
+          navigate(`/host/lobby/${response.pin}`);
+        }
+      }
+    );
+  };
+
+  const confirmCreateLobbyWithAdmin = (adminName: string, title: string) => {
+    const finalAdmin = adminName.trim() || "Admin";
+    const finalTitle = title.trim() || "Hacettepe Kahoot";
+    setHostNickname(finalAdmin);
+    setSetTitle(finalTitle);
+    sessionStorage.setItem("hostNickname", finalAdmin);
+    sessionStorage.setItem("setTitle", finalTitle);
+    sessionStorage.setItem("selectedTheme", selectedTheme);
+    setShowCreateModal(false);
+
+    if (!socket.connected) {
+      socket.connect();
+    }
+
+    socket.emit(
+      "host_create_game",
+      { questions, hostNickname: finalAdmin, title: finalTitle, theme: selectedTheme },
+      (response: any) => {
+        if (response && response.pin) {
           navigate(`/host/lobby/${response.pin}`);
         }
       }
@@ -170,11 +292,65 @@ export default function HostCreate() {
             {sidebarOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
           <div className="w-8 h-8 md:w-10 md:h-10 rounded-xl bg-purple-600/20 flex items-center justify-center border border-purple-500/30 hidden sm:flex">
-            <Sparkles className="w-5 h-5 md:w-6 md:h-6 text-purple-500 dark:text-purple-400" />
+            <span className="text-lg">🎯</span>
           </div>
-          <h1 className="text-xl md:text-2xl font-bold tracking-tight">Yarışma Oluştur</h1>
+          <div>
+            <div className="flex items-center gap-2">
+              <h1 className="text-xl md:text-2xl font-bold tracking-tight">Hacettepe Kahoot</h1>
+            </div>
+          </div>
         </div>
-        <div className="flex items-center gap-2 md:gap-4">
+        <div className="flex items-center gap-2 md:gap-3 flex-wrap justify-end">
+          {/* Room Name Input - Admin can type and edit freely */}
+          <div className="flex items-center gap-1.5 bg-[var(--input-bg)] border border-purple-500/40 px-3 py-1.5 rounded-lg text-sm shadow-sm" title="Oda / Yarışma İsmi (İstediğinizi yazabilirsiniz)">
+            <Tv size={16} className="text-purple-500 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Oda İsmi"
+              value={setTitle}
+              onChange={(e) => setSetTitle(e.target.value)}
+              className="bg-transparent font-bold outline-none w-28 sm:w-44 text-[var(--text-primary)] placeholder-[var(--text-secondary)] text-xs sm:text-sm"
+              maxLength={35}
+            />
+          </div>
+
+          {/* Theme Selector Button */}
+          <button
+            onClick={() => setShowThemeModal(true)}
+            className="flex items-center gap-1.5 bg-[var(--input-bg)] border border-[var(--border-color)] hover:border-purple-500/40 px-3 py-1.5 rounded-lg text-xs sm:text-sm font-bold hover:bg-[var(--input-focus)] transition-all shadow-sm"
+            title="Renk Temasını Seçin"
+          >
+            <Palette size={16} className="text-purple-500 flex-shrink-0" />
+            <span className="hidden sm:inline">Tema:</span>
+            <span className="flex items-center gap-1">
+              <span>{getTheme(selectedTheme).badge}</span>
+              <span className="hidden md:inline font-bold">{getTheme(selectedTheme).name}</span>
+            </span>
+          </button>
+
+          {/* Admin Name Input */}
+          <div className="flex items-center gap-1.5 bg-[var(--input-bg)] border border-yellow-500/40 px-3 py-1.5 rounded-lg text-sm shadow-sm" title="Oda Yöneticisi (Admin) Adınız">
+            <Crown size={16} className="text-yellow-500 flex-shrink-0" />
+            <input
+              type="text"
+              placeholder="Admin Adınız"
+              value={hostNickname}
+              onChange={(e) => setHostNickname(e.target.value)}
+              className="bg-transparent font-bold outline-none w-20 sm:w-28 text-[var(--text-primary)] placeholder-[var(--text-secondary)] text-xs sm:text-sm"
+              maxLength={15}
+            />
+          </div>
+
+          {/* Sitcom Template Button */}
+          <button
+            onClick={handleLoadSitcomTemplate}
+            className="bg-yellow-500/10 border border-yellow-500/30 text-yellow-600 dark:text-yellow-400 px-3 py-2 rounded-lg font-bold hover:bg-yellow-500/20 flex items-center gap-1.5 text-xs sm:text-sm transition-colors shadow-sm"
+            title="Sitcom Sorularını Yeniden Yükle"
+          >
+            <Clapperboard size={15} />
+            <span className="hidden sm:inline">Sitcom Soruları</span>
+          </button>
+
           <label className="bg-[var(--input-bg)] border border-[var(--border-color)] text-[var(--text-secondary)] px-3 md:px-4 py-2 rounded-lg font-bold hover:bg-[var(--input-focus)] hover:text-[var(--text-primary)] flex items-center gap-2 text-sm md:text-base transition-colors cursor-pointer">
             <Upload size={20} />
             <span className="hidden sm:inline">İçe Aktar</span>
@@ -353,20 +529,16 @@ export default function HostCreate() {
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               {activeQuestion.options.map((opt, index) => {
-                const colors = [
-                  "bg-red-500",
-                  "bg-blue-500",
-                  "bg-yellow-500",
-                  "bg-green-500",
-                ];
+                const themeOpt = getTheme(selectedTheme).options[index] || getTheme(selectedTheme).options[0];
                 const Shape = SHAPES[index];
                 return (
                   <div
                     key={index}
-                    className={`relative p-4 md:p-6 rounded-2xl shadow-sm flex items-center gap-3 md:gap-4 transition-colors ${colors[index]}`}
+                    style={{ backgroundColor: themeOpt.hex }}
+                    className="relative p-4 md:p-6 rounded-2xl shadow-lg flex items-center gap-3 md:gap-4 transition-all border-2 border-white/20"
                   >
-                    <div className="w-8 h-8 md:w-10 md:h-10 flex-shrink-0 text-white flex items-center justify-center">
-                      <Shape className="w-full h-full drop-shadow-md" />
+                    <div className="w-9 h-9 md:w-11 md:h-11 rounded-xl bg-black/25 flex-shrink-0 text-white flex items-center justify-center border border-white/20">
+                      <Shape className="w-5 h-5 md:w-6 md:h-6 drop-shadow-md" />
                     </div>
                     <input
                       type="text"
@@ -377,19 +549,20 @@ export default function HostCreate() {
                         newOptions[index] = e.target.value;
                         updateActiveQuestion({ options: newOptions });
                       }}
-                      className="w-full bg-transparent text-white placeholder-white/70 text-lg md:text-xl font-bold outline-none drop-shadow-sm"
+                      className="w-full bg-transparent text-white placeholder-white/70 text-lg md:text-xl font-black outline-none drop-shadow-sm"
                     />
                     <div
                       onClick={() =>
                         updateActiveQuestion({ correctOptionIndex: index })
                       }
-                      className={`w-8 h-8 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-black/20 ml-2 transition-colors ${activeQuestion.correctOptionIndex === index
-                        ? "border-white bg-white/20"
-                        : "border-white/30 hover:border-white/60"
-                        }`}
+                      className={`w-9 h-9 rounded-full border-4 cursor-pointer flex-shrink-0 flex items-center justify-center bg-black/30 ml-2 transition-all ${
+                        activeQuestion.correctOptionIndex === index
+                          ? "border-white bg-white/30 scale-105"
+                          : "border-white/40 hover:border-white/70"
+                      }`}
                     >
                       {activeQuestion.correctOptionIndex === index && (
-                        <div className="w-3 h-3 bg-white rounded-full shadow-sm" />
+                        <div className="w-3.5 h-3.5 bg-white rounded-full shadow-md" />
                       )}
                     </div>
                   </div>
@@ -451,6 +624,159 @@ export default function HostCreate() {
             </div>
             <div className="flex justify-end mt-6 pt-4 border-t border-[var(--border-color)]">
               <button onClick={() => setShowLoadModal(false)} className="px-5 py-2.5 font-bold text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)] rounded-xl transition-colors">Kapat</button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Theme Picker Modal */}
+      {showThemeModal && (
+        <div className="fixed inset-0 bg-black/75 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] rounded-3xl p-6 md:p-8 w-full max-w-lg shadow-2xl">
+            <div className="flex items-center justify-between mb-4 pb-3 border-b border-[var(--border-color)]">
+              <div className="flex items-center gap-2">
+                <Palette className="w-6 h-6 text-purple-500" />
+                <h2 className="text-xl md:text-2xl font-black text-[var(--text-primary)]">Renk Teması Seçimi</h2>
+              </div>
+              <button
+                onClick={() => setShowThemeModal(false)}
+                className="p-1.5 rounded-lg text-[var(--text-secondary)] hover:text-[var(--text-primary)] hover:bg-[var(--input-bg)]"
+              >
+                <X size={20} />
+              </button>
+            </div>
+            <p className="text-xs sm:text-sm text-[var(--text-secondary)] mb-6 font-medium">
+              Seçtiğiniz renk teması odadaki tüm oyuncuların ekranına eşzamanlı olarak yansıtılacaktır.
+            </p>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 max-h-[60vh] overflow-y-auto pr-1">
+              {THEME_LIST.map((theme) => {
+                const isSelected = selectedTheme === theme.id;
+                return (
+                  <button
+                    key={theme.id}
+                    onClick={() => {
+                      setSelectedTheme(theme.id);
+                      sessionStorage.setItem("selectedTheme", theme.id);
+                      applyTheme(theme.id);
+                    }}
+                    className={`p-3.5 rounded-2xl border-2 text-left transition-all flex flex-col gap-2 cursor-pointer ${
+                      isSelected
+                        ? "border-purple-500 bg-purple-500/10 shadow-md ring-2 ring-purple-500/20"
+                        : "border-[var(--border-color)] bg-[var(--input-bg)] hover:bg-[var(--input-focus)]"
+                    }`}
+                  >
+                    <div className="flex items-center justify-between">
+                      <span className="font-bold text-sm text-[var(--text-primary)] flex items-center gap-1.5">
+                        <span>{theme.badge}</span>
+                        <span>{theme.name}</span>
+                      </span>
+                      {isSelected && <Check size={16} className="text-purple-500 flex-shrink-0" />}
+                    </div>
+                    {/* Color Swatches */}
+                    <div className="flex items-center gap-1.5 mt-1">
+                      {theme.previewColors.map((color, idx) => (
+                        <div
+                          key={idx}
+                          className="w-5 h-5 rounded-full border border-black/20 shadow-sm"
+                          style={{ backgroundColor: color }}
+                        />
+                      ))}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+
+            <div className="flex justify-end mt-6 pt-4 border-t border-[var(--border-color)]">
+              <button
+                onClick={() => setShowThemeModal(false)}
+                className="px-6 py-2.5 rounded-xl font-bold bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-md"
+              >
+                Temayı Uygula
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Admin Name & Lobby Setup Modal */}
+      {showCreateModal && (
+        <div className="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+          <div className="bg-[var(--color-quiz-card)] border border-[var(--border-color)] rounded-3xl p-6 md:p-8 w-full max-w-md shadow-2xl">
+            <div className="w-14 h-14 rounded-2xl bg-yellow-500/15 border border-yellow-500/30 flex items-center justify-center mx-auto mb-4 text-yellow-500">
+              <Crown size={32} />
+            </div>
+            <h2 className="text-2xl font-black text-center mb-1 text-[var(--text-primary)]">Oda Yöneticisi (Admin)</h2>
+            <p className="text-sm text-center text-[var(--text-secondary)] mb-6">Lobiyi oluşturan kişi olarak yönetici adınızı, oda başlığını ve temanızı belirleyin.</p>
+            
+            <div className="space-y-4 mb-6">
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Admin / Yönetici Adı</label>
+                <input
+                  type="text"
+                  placeholder="Örn: Ahmet"
+                  value={hostNickname}
+                  onChange={(e) => setHostNickname(e.target.value)}
+                  className="w-full p-3.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-primary)] focus:border-yellow-500 focus:outline-none"
+                  autoFocus
+                  maxLength={15}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Oda / Yarışma Başlığı</label>
+                <input
+                  type="text"
+                  placeholder="Örn: Hacettepe Sitcom Gecesi"
+                  value={setTitle}
+                  onChange={(e) => setSetTitle(e.target.value)}
+                  className="w-full p-3.5 bg-[var(--input-bg)] border border-[var(--border-color)] rounded-xl font-bold text-[var(--text-primary)] focus:border-purple-500 focus:outline-none"
+                  maxLength={35}
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-bold text-[var(--text-secondary)] uppercase tracking-wider mb-1.5">Renk Teması</label>
+                <div className="grid grid-cols-2 gap-2 max-h-36 overflow-y-auto">
+                  {THEME_LIST.map((theme) => (
+                    <button
+                      type="button"
+                      key={theme.id}
+                      onClick={() => {
+                        setSelectedTheme(theme.id);
+                        applyTheme(theme.id);
+                      }}
+                      className={`p-2 rounded-xl border text-left flex items-center justify-between text-xs font-bold ${
+                        selectedTheme === theme.id
+                          ? "border-purple-500 bg-purple-500/10 text-purple-600 dark:text-purple-300"
+                          : "border-[var(--border-color)] bg-[var(--input-bg)]"
+                      }`}
+                    >
+                      <span className="truncate">{theme.badge} {theme.name}</span>
+                      <div className="flex gap-1 flex-shrink-0">
+                        {theme.previewColors.slice(0, 2).map((c, i) => (
+                          <div key={i} className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: c }} />
+                        ))}
+                      </div>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowCreateModal(false)}
+                className="flex-1 py-3 font-bold rounded-xl bg-[var(--input-bg)] hover:bg-[var(--input-focus)] transition-colors"
+              >
+                İptal
+              </button>
+              <button
+                onClick={() => confirmCreateLobbyWithAdmin(hostNickname || "Admin", setTitle || "Hacettepe Kahoot")}
+                className="flex-1 py-3 font-bold rounded-xl bg-purple-600 text-white hover:bg-purple-700 transition-colors shadow-lg shadow-purple-600/30 flex items-center justify-center gap-2"
+              >
+                <Play size={18} />
+                Odayı Başlat
+              </button>
             </div>
           </div>
         </div>

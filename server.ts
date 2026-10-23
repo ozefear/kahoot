@@ -73,6 +73,8 @@ type GameState = {
   players: Player[];
   questionStartTime?: number;
   timer?: NodeJS.Timeout;
+  questionInterval?: NodeJS.Timeout;
+  theme?: string;
   lastResultData?: any;
 };
 
@@ -159,9 +161,15 @@ async function startServer() {
       if (game) {
         game.hostSocketId = socket.id;
         socket.join(data.pin);
-        const { timer, ...safeGame } = game;
+        const { timer, questionInterval, ...safeGame } = game;
+        let remainingTime = undefined;
+        if (game.status === "question" && game.questionStartTime) {
+          const elapsed = Math.floor((Date.now() - game.questionStartTime) / 1000);
+          const currentQuestion = game.questions[game.currentQuestionIndex];
+          remainingTime = Math.max(0, currentQuestion.timeLimit - elapsed);
+        }
         io.to(data.pin).emit("host_reconnected");
-        callback({ success: true, game: safeGame });
+        callback({ success: true, game: safeGame, hostNickname: game.hostNickname, remainingTime, theme: game.theme || "sitcom" });
       } else {
         callback({ error: "Oyun bulunamadı" });
       }
@@ -176,7 +184,7 @@ async function startServer() {
           player.id = socket.id;
           player.isConnected = true;
           socket.join(data.pin);
-          const { timer, ...safeGame } = game;
+          const { timer, questionInterval, ...safeGame } = game;
 
           let remainingTime = undefined;
           if (game.status === "question" && game.questionStartTime) {
@@ -191,7 +199,26 @@ async function startServer() {
           }
 
           io.to(game.hostSocketId).emit("player_joined", player);
-          callback({ success: true, game: safeGame, player, remainingTime, leaderboard });
+          io.to(game.pin).emit("lobby_players_updated", {
+            players: game.players.filter(p => p.isConnected).map(p => ({ id: p.id, name: p.name })),
+            hostNickname: game.hostNickname,
+            title: game.title,
+            theme: game.theme || "sitcom",
+          });
+
+          callback({
+            success: true,
+            game: safeGame,
+            player,
+            remainingTime,
+            leaderboard,
+            hostNickname: game.hostNickname,
+            title: game.title,
+            theme: game.theme || "sitcom",
+            players: game.players.filter(p => p.isConnected).map(p => ({ id: p.id, name: p.name })),
+            questionIndex: game.currentQuestionIndex,
+            totalQuestions: game.questions.length,
+          });
         } else {
           callback({ error: "Oyuncu bulunamadı" });
         }
@@ -201,13 +228,16 @@ async function startServer() {
     });
 
     // ── Host Creates Game ────────────────────────────────────────────────────
-    socket.on("host_create_game", (data: { questions: Question[]; hostNickname?: string; title?: string }, callback) => {
+    socket.on("host_create_game", (data: { questions: Question[]; hostNickname?: string; title?: string; theme?: string }, callback) => {
       const pin = Math.floor(100000 + Math.random() * 900000).toString();
+      const adminName = data.hostNickname?.trim() || "Admin";
+      const selectedTheme = data.theme || "sitcom";
       const gameState: GameState = {
         pin,
         hostSocketId: socket.id,
-        hostNickname: data.hostNickname || "unknown",
-        title: data.title || "Yarışma",
+        hostNickname: adminName,
+        title: data.title?.trim() || "Hacettepe Kahoot",
+        theme: selectedTheme,
         status: "lobby",
         questions: data.questions,
         currentQuestionIndex: 0,
@@ -215,8 +245,17 @@ async function startServer() {
       };
       games.set(pin, gameState);
       socket.join(pin);
-      callback({ pin });
-      console.log(`Game created with PIN: ${pin}`);
+      callback({ pin, hostNickname: adminName, title: gameState.title, theme: selectedTheme });
+      console.log(`Game created with PIN: ${pin} by Admin: ${adminName} [Theme: ${selectedTheme}]`);
+    });
+
+    // ── Host Updates Theme ───────────────────────────────────────────────────
+    socket.on("host_update_theme", (data: { pin: string; theme: string }) => {
+      const game = games.get(data.pin);
+      if (game && game.hostSocketId === socket.id) {
+        game.theme = data.theme;
+        io.to(data.pin).emit("theme_updated", { theme: data.theme });
+      }
     });
 
     // ── Player Joins ─────────────────────────────────────────────────────────
@@ -243,6 +282,12 @@ async function startServer() {
       socket.join(data.pin);
 
       io.to(game.hostSocketId).emit("player_joined", newPlayer);
+      io.to(game.pin).emit("lobby_players_updated", {
+        players: game.players.filter(p => p.isConnected).map(p => ({ id: p.id, name: p.name })),
+        hostNickname: game.hostNickname,
+        title: game.title,
+        theme: game.theme || "sitcom",
+      });
 
       // Mid-game late join: send them the current question immediately
       if (game.status === "question" && game.questionStartTime) {
@@ -256,10 +301,23 @@ async function startServer() {
           timeLimit: currentQuestion.timeLimit,
           remainingTime,
         };
-        socket.emit("new_question", { question: playerQuestion });
+        socket.emit("new_question", {
+          question: playerQuestion,
+          questionIndex: game.currentQuestionIndex,
+          totalQuestions: game.questions.length,
+        });
+        socket.emit("timer_tick", { timeLeft: remainingTime });
       }
 
-      callback({ success: true, player: newPlayer, gameStatus: game.status });
+      callback({
+        success: true,
+        player: newPlayer,
+        gameStatus: game.status,
+        hostNickname: game.hostNickname,
+        title: game.title,
+        theme: game.theme || "sitcom",
+        players: game.players.filter(p => p.isConnected).map(p => ({ id: p.id, name: p.name })),
+      });
     });
 
     // ── Kick Player ──────────────────────────────────────────────────────────
@@ -276,13 +334,19 @@ async function startServer() {
         game.players.splice(playerIndex, 1);
         // Notify host UI
         io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
+        io.to(game.pin).emit("lobby_players_updated", {
+          players: game.players.filter(p => p.isConnected).map(p => ({ id: p.id, name: p.name })),
+          hostNickname: game.hostNickname,
+          title: game.title,
+          theme: game.theme || "sitcom",
+        });
 
         // If they were answering a question, check if we should end it now
         if (game.status === "question") {
           const connectedPlayers = game.players.filter(p => p.isConnected);
           const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every(p => p.currentAnswerIndex !== undefined);
-          if (allAnswered && game.timer) {
-            clearTimeout(game.timer);
+          if (allAnswered && (game.timer || game.questionInterval)) {
+            clearGameTimers(game);
             endQuestion(game, io);
           }
         }
@@ -315,8 +379,8 @@ async function startServer() {
 
           // Check if all connected players answered
           const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.currentAnswerIndex !== undefined);
-          if (allAnswered && game.timer) {
-            clearTimeout(game.timer);
+          if (allAnswered && (game.timer || game.questionInterval)) {
+            clearGameTimers(game);
             endQuestion(game, io);
           }
         }
@@ -328,7 +392,7 @@ async function startServer() {
       const game = games.get(data.pin);
       if (game && game.hostSocketId === socket.id) {
         if (game.status === "question") {
-          if (game.timer) clearTimeout(game.timer);
+          clearGameTimers(game);
           endQuestion(game, io);
         } else if (game.status === "leaderboard") {
           game.currentQuestionIndex++;
@@ -359,12 +423,18 @@ async function startServer() {
             const player = game.players[playerIndex];
             player.isConnected = false;
             io.to(game.hostSocketId).emit("player_left", { playerId: player.id });
+            io.to(pin).emit("lobby_players_updated", {
+              players: game.players.filter(p => p.isConnected).map(p => ({ id: p.id, name: p.name })),
+              hostNickname: game.hostNickname,
+              title: game.title,
+              theme: game.theme || "sitcom",
+            });
 
             if (game.status === "question") {
               const connectedPlayers = game.players.filter(p => p.isConnected);
               const allAnswered = connectedPlayers.length > 0 && connectedPlayers.every((p) => p.currentAnswerIndex !== undefined);
-              if (allAnswered && game.timer) {
-                clearTimeout(game.timer);
+              if (allAnswered && (game.timer || game.questionInterval)) {
+                clearGameTimers(game);
                 endQuestion(game, io);
               }
             }
@@ -375,6 +445,17 @@ async function startServer() {
   });
 
   // ── Game Loop ───────────────────────────────────────────────────────────────
+  function clearGameTimers(game: GameState) {
+    if (game.timer) {
+      clearTimeout(game.timer);
+      game.timer = undefined;
+    }
+    if (game.questionInterval) {
+      clearInterval(game.questionInterval);
+      game.questionInterval = undefined;
+    }
+  }
+
   function startGameLoop(game: GameState, io: Server) {
     game.status = "question";
     const currentQuestion = game.questions[game.currentQuestionIndex];
@@ -393,6 +474,7 @@ async function startServer() {
       questionIndex: game.currentQuestionIndex,
       totalQuestions: game.questions.length,
       totalPlayers: connectedPlayers.length,
+      theme: game.theme || "sitcom",
     });
 
     const playerQuestion = {
@@ -403,15 +485,41 @@ async function startServer() {
     };
 
     game.players.forEach((p) => {
-      io.to(p.id).emit("new_question", { question: playerQuestion });
+      io.to(p.id).emit("new_question", {
+        question: playerQuestion,
+        questionIndex: game.currentQuestionIndex,
+        totalQuestions: game.questions.length,
+        theme: game.theme || "sitcom",
+      });
     });
 
+    clearGameTimers(game);
+
+    let timeLeft = currentQuestion.timeLimit;
+    io.to(game.pin).emit("timer_tick", { timeLeft });
+
+    game.questionInterval = setInterval(() => {
+      timeLeft--;
+      const currentRemaining = Math.max(0, timeLeft);
+      io.to(game.pin).emit("timer_tick", { timeLeft: currentRemaining });
+      if (currentRemaining <= 0) {
+        if (game.questionInterval) {
+          clearInterval(game.questionInterval);
+          game.questionInterval = undefined;
+        }
+      }
+    }, 1000);
+
     game.timer = setTimeout(() => {
+      clearGameTimers(game);
       endQuestion(game, io);
     }, currentQuestion.timeLimit * 1000);
   }
 
   function endQuestion(game: GameState, io: Server) {
+    clearGameTimers(game);
+    io.to(game.pin).emit("timer_tick", { timeLeft: 0 });
+
     game.status = "leaderboard";
     const currentQuestion = game.questions[game.currentQuestionIndex];
 
