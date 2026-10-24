@@ -270,7 +270,7 @@ export default function PlayerGame() {
             animate={{ y: 0, opacity: 1 }}
             className="flex items-center gap-2 bg-orange-500/30 text-white px-6 py-2 rounded-full font-bold text-xl md:text-2xl mb-4 border border-orange-400/50 backdrop-blur-sm"
           >
-            <Flame className="text-orange-300" /> {result.streak}'li Seri!
+            <Flame className="text-orange-300" /> {result.streak} Soruluk Seri!
           </motion.div>
         )}
 
@@ -352,11 +352,10 @@ export default function PlayerGame() {
           </div>
           <h2 className="text-3xl md:text-4xl font-black mb-2 text-white drop-shadow-sm">Cevabın Alındı!</h2>
           {timeLeft > 0 && (
-            <div className={`inline-flex items-center gap-1.5 font-black text-sm md:text-base px-4 py-1.5 rounded-full mb-3 shadow-sm ${
-              timeLeft <= 5 
-                ? "bg-red-500/30 text-red-200 border border-red-500/50 animate-pulse" 
+            <div className={`inline-flex items-center gap-1.5 font-black text-sm md:text-base px-4 py-1.5 rounded-full mb-3 shadow-sm ${timeLeft <= 5
+                ? "bg-red-500/30 text-red-200 border border-red-500/50 animate-pulse"
                 : "bg-purple-500/20 text-purple-200 border border-purple-400/40"
-            }`}>
+              }`}>
               <Clock size={16} />
               <span>Kalan Süre: {timeLeft}s</span>
             </div>
@@ -411,11 +410,10 @@ export default function PlayerGame() {
         </div>
 
         {timeLeft !== null && (
-          <div className={`flex items-center gap-1.5 font-black text-sm md:text-base px-4 py-1.5 rounded-full transition-colors shadow-sm ${
-            timeLeft <= 5 
-              ? "bg-red-500/30 text-red-200 border border-red-500/50 animate-pulse" 
+          <div className={`flex items-center gap-1.5 font-black text-sm md:text-base px-4 py-1.5 rounded-full transition-colors shadow-sm ${timeLeft <= 5
+              ? "bg-red-500/30 text-red-200 border border-red-500/50 animate-pulse"
               : "bg-purple-500/20 text-purple-200 border border-purple-400/40"
-          }`}>
+            }`}>
             <Clock size={16} />
             <span>{timeLeft}s</span>
           </div>
