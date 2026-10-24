@@ -424,7 +424,7 @@ export default function HostCreate() {
                 {(provided) => (
                   <div {...provided.droppableProps} ref={provided.innerRef} className="space-y-3">
                     {questions.map((q, index) => (
-                      <Draggable draggableId={q.id} index={index} key={q.id}>
+                      <Draggable draggableId={q.id} index={index}>
                         {(provided) => (
                           <div
                             ref={provided.innerRef}
